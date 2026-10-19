@@ -98,7 +98,10 @@ Route (app)                              Size     First Load JS
 ├ ƒ /admin/plans                         2.5 kB         108 kB
 ├ ƒ /admin/team                          2.3 kB         107 kB
 ├ ƒ /admin/templates                     2.7 kB         109 kB
+├ ƒ /admin/templates/[id]/edit            3.2 kB         110 kB
+├ ƒ /admin/templates/new                  3.1 kB         110 kB
 ├ ƒ /admin/users                         2.4 kB         107 kB
+├ ƒ /api/admin/templates                 0 B            0 B
 ├ ƒ /api/rsvp                            0 B            0 B
 ├ ○ /catalog                             3.5 kB         105 kB
 ├ ○ /contact                             1.1 kB         98.3 kB
@@ -118,9 +121,10 @@ Route (app)                              Size     First Load JS
 ├ ○ /register                            2.2 kB         103 kB
 └ ○ /reset-password                      1.9 kB         103 kB
 
-Total de Rutas Verificadas: 26 rutas
+Total de Rutas Verificadas: 28 rutas
 Errores de Compilación: 0
 Errores TypeScript: 0
+Motor de Plantillas Modulares: Verificado (Registry, TemplateRenderer, UniversalBaseTemplate, BodaImperialGoldTemplate)
 Estado: Exitoso (Exit Code 0)
 ```
 
@@ -131,4 +135,5 @@ Estado: Exitoso (Exit Code 0)
 - **Rama Actual:** `main`
 - **Control de Versiones:** Cambios estructurados mediante commits descriptivos locales.
 - **Regla Estricta Cumplida:** **Bajo ninguna circunstancia se ejecuta `git push`**. El comando de subida remota permanece reservado de forma exclusiva para el desarrollador principal.
-- **Archivos de Documentación Actualizados:** `auditoria.md`, `analisis.md`, `AGENTS.md`.
+- **Archivos de Documentación Actualizados:** `auditoria.md`, `analisis.md`, `docs/GUIA_CREACION_PLANTILLAS.md`, `AGENTS.md`.
+

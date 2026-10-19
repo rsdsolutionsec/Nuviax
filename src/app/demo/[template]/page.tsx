@@ -1,20 +1,8 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { CountdownTimer } from '@/components/invitation/CountdownTimer'
-import { PublicRsvpModal } from '@/components/invitation/PublicRsvpModal'
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  Gift,
-  Heart,
-  Navigation,
-  Shirt,
-  Sparkles,
-  ArrowLeft,
-  Check,
-} from 'lucide-react'
+import { TemplateRenderer } from '@/templates/TemplateRenderer'
+import { ArrowLeft } from 'lucide-react'
 
 interface DemoProps {
   params: Promise<{ template: string }>
@@ -24,8 +12,10 @@ const DEFAULT_DEMO = {
   title: 'Ana & Carlos',
   subtitle: 'Nuestra Boda',
   hosts: 'Ana Lucía Silva & Carlos Mendoza',
-  quote: 'Dos vidas, un solo corazón latiendo juntos.',
+  quote: 'Dos vidas, un solo corazón latiendo juntos hacia una misma eternidad.',
   date: '2026-11-28T17:00:00Z',
+  music_url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-wedding-113543.mp3',
+  music_title: 'Vals Nupcial de Gala',
   ceremony: {
     name: 'Ceremonia Religiosa',
     time: '17:00',
@@ -34,7 +24,7 @@ const DEFAULT_DEMO = {
     map_url: 'https://maps.google.com',
   },
   reception: {
-    name: 'Recepción & Fiesta',
+    name: 'Recepción & Fiesta de Gala',
     time: '19:30',
     location_name: 'Hacienda Real Los Rosales',
     address: 'Km 14 Vía Campestre',
@@ -49,7 +39,13 @@ const DEFAULT_DEMO = {
   dress_code: 'Rigurosa Etiqueta / Traje Formal Oscuro',
   gifts: {
     message: 'Su presencia es nuestro mayor regalo. Si desean tener un detalle con nosotros, dispondremos de lluvia de sobres el día del evento.',
+    bank_details: 'Banco Nacional · Cta Ahorros # 4820-1928-1928\nTitular: Carlos Mendoza\nIdentificación: 109829102\nAlias: BODA.ANA.CARLOS',
   },
+  gallery: [
+    'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80',
+  ],
 }
 
 export default async function DemoPage({ params }: DemoProps) {
@@ -71,22 +67,49 @@ export default async function DemoPage({ params }: DemoProps) {
     hosts: example.hosts || DEFAULT_DEMO.hosts,
     quote: example.quote || DEFAULT_DEMO.quote,
     date: example.date || DEFAULT_DEMO.date,
+    music_url: example.music_url || DEFAULT_DEMO.music_url,
+    music_title: example.music_title || DEFAULT_DEMO.music_title,
     ceremony: example.ceremony || DEFAULT_DEMO.ceremony,
     reception: example.reception || DEFAULT_DEMO.reception,
     itinerary: example.itinerary || DEFAULT_DEMO.itinerary,
     dress_code: example.dress_code || DEFAULT_DEMO.dress_code,
     gifts: example.gifts || DEFAULT_DEMO.gifts,
+    gallery: example.gallery || DEFAULT_DEMO.gallery,
   }
 
   const templateCode = dbTemplate?.code || template
 
+  const demoEvent = {
+    id: dbTemplate?.id || 'demo-preview',
+    title: config.title,
+    slug: dbTemplate?.slug || template,
+    event_date: config.date,
+    content_data: config,
+    visual_theme: dbTemplate?.schema_definition?.theme_options || {},
+    templates: {
+      code: templateCode,
+      slug: dbTemplate?.slug || template,
+      name: dbTemplate?.name,
+    },
+    plans: {
+      name: 'Plan Evento Pro (Demo)',
+      code: 'pro',
+      limits: {
+        allow_music: true,
+        allow_countdown: true,
+        max_gallery_photos: 10,
+        max_companions_per_guest: 4,
+      },
+    },
+  }
+
   return (
-    <div className="min-h-screen bg-[#070510] text-[#F8FAFC]">
+    <div className="relative">
       {/* Floating Demo Top Bar */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2 rounded-full bg-black/80 backdrop-blur-md border border-purple-500/30 shadow-2xl">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2 rounded-full bg-black/85 backdrop-blur-md border border-purple-500/30 shadow-2xl">
         <Link
           href="/catalog"
-          className="text-xs text-slate-300 hover:text-white flex items-center gap-1 font-medium"
+          className="text-xs text-slate-300 hover:text-white flex items-center gap-1 font-medium transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Volver al Catálogo</span>
@@ -98,131 +121,18 @@ export default async function DemoPage({ params }: DemoProps) {
         <span className="w-1 h-1 rounded-full bg-slate-600" />
         <Link
           href={`/dashboard/events/new?template=${templateCode}`}
-          className="rsd-glow-button text-xs font-bold text-white px-3 py-1 rounded-full"
+          className="rsd-glow-button text-xs font-bold text-white px-3 py-1 rounded-full shadow-lg"
         >
           Usar esta plantilla
         </Link>
       </div>
 
-      {/* HERO SECTION */}
-      <header className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-4 py-20 overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/15 rounded-full blur-[150px] pointer-events-none" />
-
-        <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-          <p className="text-xs uppercase tracking-[0.3em] font-semibold text-purple-300">
-            {config.subtitle}
-          </p>
-
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white leading-tight">
-            {config.title}
-          </h1>
-
-          <p className="text-lg sm:text-xl text-slate-300 font-medium">
-            {config.hosts}
-          </p>
-
-          <blockquote className="italic text-sm sm:text-base text-slate-400 max-w-lg mx-auto border-y border-purple-900/30 py-4 my-6">
-            "{config.quote}"
-          </blockquote>
-
-          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-purple-950/60 border border-purple-500/30 text-white text-sm font-semibold shadow-lg">
-            <Calendar className="w-4 h-4 text-pink-400" />
-            <span>
-              {new Date(config.date).toLocaleDateString('es-ES', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </span>
-          </div>
-
-          <div className="pt-8">
-            <CountdownTimer targetDate={config.date} />
-          </div>
-        </div>
-      </header>
-
-      {/* CEREMONY & RECEPTION */}
-      <section className="py-20 px-4 max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {config.ceremony && (
-            <div className="rsd-glow-card p-8 rounded-3xl border border-purple-900/30">
-              <div className="w-12 h-12 rounded-2xl bg-purple-600/20 text-purple-400 flex items-center justify-center mb-4">
-                <Heart className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl font-bold text-white">{config.ceremony.name}</h3>
-              <p className="text-sm text-slate-300 mt-2">Hora: {config.ceremony.time}</p>
-              <p className="text-sm font-semibold text-white mt-1">{config.ceremony.location_name}</p>
-              <p className="text-xs text-slate-400 mt-1">{config.ceremony.address}</p>
-            </div>
-          )}
-
-          {config.reception && (
-            <div className="rsd-glow-card p-8 rounded-3xl border border-purple-900/30">
-              <div className="w-12 h-12 rounded-2xl bg-pink-600/20 text-pink-400 flex items-center justify-center mb-4">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl font-bold text-white">{config.reception.name}</h3>
-              <p className="text-sm text-slate-300 mt-2">Hora: {config.reception.time}</p>
-              <p className="text-sm font-semibold text-white mt-1">{config.reception.location_name}</p>
-              <p className="text-xs text-slate-400 mt-1">{config.reception.address}</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ITINERARY */}
-      {config.itinerary && (
-        <section className="py-16 px-4 max-w-3xl mx-auto border-t border-purple-900/20">
-          <div className="text-center mb-10">
-            <h3 className="text-2xl font-bold text-white">Itinerario</h3>
-          </div>
-          <div className="space-y-4">
-            {config.itinerary.map((step: any, idx: number) => (
-              <div
-                key={idx}
-                className="flex items-center gap-4 p-4 rounded-xl bg-[#120E24] border border-purple-900/30"
-              >
-                <span className="font-mono text-sm font-bold text-pink-400 px-3 py-1 rounded bg-pink-500/10">
-                  {step.time}
-                </span>
-                <span className="text-sm text-white font-medium">{step.title}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* DRESS CODE & GIFTS */}
-      <section className="py-16 px-4 max-w-2xl mx-auto text-center border-t border-purple-900/20 space-y-6">
-        <div>
-          <h3 className="text-xl font-bold text-white">Código de Vestimenta</h3>
-          <p className="text-sm text-slate-300 mt-1">{config.dress_code}</p>
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-white">Mesa de Regalos</h3>
-          <p className="text-sm text-slate-400 mt-1">{config.gifts?.message}</p>
-        </div>
-      </section>
-
-      {/* RSVP DEMO */}
-      <section className="py-24 px-4 bg-gradient-to-b from-[#090714] to-[#120D29] border-t border-purple-900/30 text-center">
-        <div className="max-w-2xl mx-auto space-y-4">
-          <h2 className="text-3xl font-extrabold text-white">Confirmación de Asistencia</h2>
-          <p className="text-sm text-slate-300">
-            En la invitación real, tus invitados confirmarán con un solo toque desde su celular.
-          </p>
-          <div className="pt-4">
-            <PublicRsvpModal
-              eventSlug="demo"
-              eventTitle={config.title}
-              maxCompanions={2}
-              askDietary={true}
-            />
-          </div>
-        </div>
-      </section>
+      {/* RENDER MODULAR TEMPLATE */}
+      <TemplateRenderer
+        event={demoEvent}
+        isDemo={true}
+        isReadOnly={false}
+      />
     </div>
   )
 }

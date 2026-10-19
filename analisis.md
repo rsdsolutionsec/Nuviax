@@ -129,6 +129,15 @@ La plataforma cuenta con 18 plantillas activas estructuradas bajo un contrato t�
 17. **`GRA-001` (Graduación Magna Cum Laude):** Birrete académico, diploma dorado y azul marino formal.
 18. **`GRA-002` (Graduación Vanguardia Moderna):** Estética tecnológica para egresados universitarios.
 
+### 5.1. Creador y Editor Visual de Plantillas (`/admin/templates/new` y `/admin/templates/[id]/edit`)
+La plataforma incorpora una herramienta para que los administradores y desarrolladores (incluyendo a Robin) creen y editen plantillas directamente desde la consola operativa sin requerir cambios de código:
+- **Identificación:** Código único (ej. `ROB-001`, `BOD-005`), nombre comercial, categoría asociada, desarrollador asignado y dirección artística.
+- **Tipografía Dinámica:** Selección de fuentes para títulos (`Cinzel`, `Playfair Display`, `Cormorant Garamond`, `Montserrat`, `Syne`, `Outfit`, `Plus Jakarta Sans`) y cuerpo, con previsualización en vivo.
+- **Paleta de Colores Exclusiva:** Color primario, secundario, fondo base y acento de resplandor mediante color pickers interactivos.
+- **Estructura y Capacidades:** Habilitación modular de secciones (hero, cuenta regresiva, ceremonia, recepción, itinerario, vestimenta, regalos, galería, música, RSVP).
+- **Ciclo de Vida:** Control de estado (`draft`, `in_review`, `approved`, `published`, `archived`) y versionado semántico incremental.
+- **Endpoint Backend:** `POST /api/admin/templates` y `PUT /api/admin/templates` con validación Zod ([src/lib/templates/contract.ts](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/src/lib/templates/contract.ts)), protección de rol `admin` y registro en `audit_logs`.
+
 ---
 
 ## 6. Consola Administrativa Modular (`/admin`)
@@ -197,3 +206,36 @@ La consola de administración está dividida en 9 submódulos independientes baj
 - **Acompañantes Controlados:** El servidor valida que el número de acompañantes confirmados no supere el cupo asignado en el pase del invitado.
 - **Protección de Datos Sensibles:** Las restricciones alimentarias y alergias solo pueden ser leídas por el anfitrión del evento y administradores; los asesores comerciales y visitantes anónimos tienen acceso denegado por RLS.
 - **Exportación CSV:** Genera archivos compatibles con Microsoft Excel y Google Sheets, disponible exclusivamente para eventos con plan Evento Pro activo.
+
+---
+
+## 9. Arquitectura del Motor de Plantillas en Código (Modular Template Engine)
+
+Para permitir que el equipo de desarrollo cree plantillas altamente personalizadas mediante código React, TypeScript, animaciones CSS y elementos interactivos complejos, se implementó una arquitectura modular desacoplada:
+
+### 9.1. Contrato Técnico Unificado (`src/templates/types.ts`)
+Define la interfaz `InvitationTemplateProps` implementada por cada plantilla:
+- **`event`:** Identificador, título, slug, fecha del evento y estado.
+- **`content`:** Datos editables (anfitriones, cita/quote, ceremonia, recepción, itinerario cronológico, código de vestimenta, datos bancarios/regalos, fotos de galería y música).
+- **`theme`:** Paleta de colores (`primary_color`, `secondary_color`, `accent_color`, `background_color`) y tipografías artísticas (`Cinzel`, `Playfair Display`, `Cormorant Garamond`, `Montserrat`, `Syne`, `Outfit`, `Plus Jakarta Sans`).
+- **`plan`:** Restricciones comerciales (`allow_music`, `allow_countdown`, `max_gallery_photos`, `max_companions_per_guest`).
+- **`guest`:** Datos de personalización para el invitado (nombre, cupos reservados en pase).
+
+### 9.2. Registro de Plantillas (`src/templates/registry.ts`)
+Mapea los códigos únicos de plantilla (`BOD-001`, `XV-001`, etc.) o sus slugs con el componente React correspondiente. Si un código no tiene componente específico, el sistema utiliza de manera automática y resiliente la plantilla declarativa universal `UniversalBaseTemplate`.
+
+### 9.3. Despachador Universal (`src/templates/TemplateRenderer.tsx`)
+Unifica la renderización en las 4 vistas del ciclo de vida del producto:
+1. `/[slug]` (Vista oficial para invitados y anfitriones)
+2. `/preview/[token]` (Vista previa privada protegida en modo solo lectura)
+3. `/demo/[template]` (Demostración pública del catálogo)
+4. `/dashboard/events/[id]/edit` (Previsualización en tiempo real dentro del mock móvil)
+
+### 9.4. Componentes Interactivos y Multimedia Integrados
+- **Reproductor de Música (`BackgroundMusicPlayer`):** Control flotante no intrusivo (nunca autoplay con sonido), disco de vinilo animado en giro durante reproducción y botón de pausa/reanudación accesible.
+- **Contador Regresivo (`CountdownTimer`):** Reloj dinámico de días, horas, minutos y segundos sincronizado con la fecha del evento.
+- **Confirmación RSVP (`PublicRsvpModal`):** Modal interactivo con selector de acompañantes y animación de confeti mediante `canvas-confetti`.
+- **Integración de Mapas:** Enlaces directos a Google Maps para navegación GPS de invitados a ceremonias y recepciones.
+- **Mesa de Regalos & Transferencias:** Caja con botón de copiado rápido al portapapeles (`navigator.clipboard.writeText`) con confirmación visual de copiado.
+- **Guía de Desarrollo:** Documentada paso a paso en [docs/GUIA_CREACION_PLANTILLAS.md](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/docs/GUIA_CREACION_PLANTILLAS.md).
+

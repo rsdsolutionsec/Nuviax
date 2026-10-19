@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Palette, Eye, CheckCircle2, AlertCircle, Filter, ArrowUpRight, Sparkles } from 'lucide-react'
+import { Palette, Eye, CheckCircle2, AlertCircle, Filter, ArrowUpRight, Sparkles, Plus, Edit } from 'lucide-react'
 
 export const metadata = {
   title: 'Gestión de Plantillas (18) | Consola Nuviax',
@@ -25,23 +25,20 @@ export default async function AdminTemplatesPage({
       id,
       code,
       name,
-      slug,
       description,
       is_active,
-      is_premium,
       status,
       version,
       assigned_developer,
       artistic_style,
       quality_checklist,
       created_at,
-      categories(name, slug)
+      categories(name)
     `)
     .order('code', { ascending: true })
 
   const filteredTemplates = (templates || []).filter((tpl: any) => {
     if (devFilter !== 'all' && tpl.assigned_developer !== devFilter) return false
-    if (catFilter !== 'all' && tpl.categories?.slug !== catFilter) return false
     return true
   })
 
@@ -59,13 +56,23 @@ export default async function AdminTemplatesPage({
         <div>
           <h1 className="text-2xl font-extrabold text-white">Biblioteca & Ciclo de Vida de Plantillas</h1>
           <p className="text-xs text-slate-400 mt-1">
-            Catálogo completo de 18 plantillas organizadas por frentes técnicos, versión y estándares de calidad.
+            Catálogo completo de plantillas organizadas por frentes técnicos, versión y estándares de calidad.
           </p>
         </div>
 
-        <div className="px-3.5 py-1.5 rounded-xl bg-purple-900/30 border border-purple-800/40 text-purple-300 text-xs font-semibold flex items-center gap-2">
-          <Palette className="w-4 h-4 text-pink-400" />
-          <span>18 Plantillas en Producción</span>
+        <div className="flex items-center gap-3">
+          <div className="px-3.5 py-2 rounded-xl bg-purple-900/30 border border-purple-800/40 text-purple-300 text-xs font-semibold flex items-center gap-2">
+            <Palette className="w-4 h-4 text-pink-400" />
+            <span>{(templates || []).length} Plantillas Activas</span>
+          </div>
+
+          <Link
+            href="/admin/templates/new"
+            className="rsd-glow-button px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-md"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nueva Plantilla</span>
+          </Link>
         </div>
       </div>
 
@@ -209,15 +216,24 @@ export default async function AdminTemplatesPage({
                   </td>
 
                   <td className="py-3.5 px-4 text-right">
-                    <a
-                      href={`/demo/${tpl.slug || tpl.code}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 rounded-lg bg-white/5 hover:bg-purple-600/20 text-slate-300 hover:text-purple-300 inline-flex items-center"
-                      title="Abrir demo en vivo"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </a>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Link
+                        href={`/admin/templates/${tpl.id}/edit`}
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                        title="Editar parámetros de plantilla"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </Link>
+                      <a
+                        href={`/demo/${tpl.code}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-purple-600/20 text-slate-300 hover:text-purple-300 inline-flex items-center"
+                        title="Abrir demo en vivo"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </td>
                 </tr>
               ))}
