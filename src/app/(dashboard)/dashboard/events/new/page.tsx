@@ -90,7 +90,7 @@ function NewEventForm() {
       const { data: template } = await supabase
         .from('templates')
         .select('id, default_config')
-        .eq('code', templateCode)
+        .or(`code.eq.${templateCode.toUpperCase()},slug.eq.${templateCode}`)
         .maybeSingle()
 
       // 2. Get default plan
@@ -233,16 +233,47 @@ function NewEventForm() {
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-            Plantilla Seleccionada
+            Plantilla Seleccionada (18 Diseños Disponibles)
           </label>
           <select
             value={templateCode}
             onChange={(e) => setTemplateCode(e.target.value)}
             className="w-full px-4 py-3.5 rounded-xl bg-[#090714] border border-purple-900/30 text-white text-sm focus:outline-none focus:border-purple-500"
           >
-            <option value="boda-elegance-gold">Elegance Gold (Bodas)</option>
-            <option value="quince-glam-sparkle">Glam Sparkle XV (Quinceañeras)</option>
-            <option value="cumple-neon-fest">Neon Fest & Cocktails (Cumpleaños)</option>
+            <optgroup label="Bodas & Compromisos (Programador A)">
+              <option value="BOD-001">BOD-001 · Boda Imperial Gold (Gala & Oro)</option>
+              <option value="BOD-002">BOD-002 · Boda Jardín Botánico (Campestre Chic)</option>
+              <option value="BOD-003">BOD-003 · Boda Minimalista Noir (Editorial)</option>
+              <option value="BOD-004">BOD-004 · Boda Bohemia Terracota (Boho Sunset)</option>
+            </optgroup>
+            <optgroup label="Aniversarios & Parejas (Programador A)">
+              <option value="PAR-001">PAR-001 · Aniversario Bodas de Plata & Oro</option>
+              <option value="PAR-002">PAR-002 · Compromiso & Velada Romántica</option>
+            </optgroup>
+            <optgroup label="Cumpleaños Adultos (Programador B)">
+              <option value="CUM-001">CUM-001 · Cumpleaños Midnight Glam (Cóctel VIP)</option>
+              <option value="CUM-002">CUM-002 · Neon Party Retro Wave (Cyberpunk)</option>
+              <option value="CUM-003">CUM-003 · Tropical Sunset Celebration (Pool Party)</option>
+            </optgroup>
+            <optgroup label="Quinceañeras (Programador B)">
+              <option value="QUI-001">QUI-001 · Quinceañera Princesa Rosé (Cuento de Hadas)</option>
+              <option value="QUI-002">QUI-002 · Quinceañera Midnight Star (Noche Estrellada)</option>
+            </optgroup>
+            <optgroup label="Cumpleaños Infantiles (Programador B)">
+              <option value="KIS-001">KIS-001 · Aventura Galáctica Kids (Cohetes & Planetas)</option>
+            </optgroup>
+            <optgroup label="Baby Showers (Programador C)">
+              <option value="BAB-001">BAB-001 · Baby Shower Dulce Nube (Acuarela Pastel)</option>
+              <option value="BAB-002">BAB-002 · Baby Shower Safari Acuarela (Safari Baby)</option>
+            </optgroup>
+            <optgroup label="Bautizos & Comunión (Programador C)">
+              <option value="BAU-001">BAU-001 · Bautizo Ángeles & Olivo (Espiritual)</option>
+              <option value="BAU-002">BAU-002 · Bautizo Celeste Luz (Blanco Marfil)</option>
+            </optgroup>
+            <optgroup label="Graduaciones (Programador C)">
+              <option value="GRA-001">GRA-001 · Graduación Magna Cum Laude (Gala & Birrete)</option>
+              <option value="GRA-002">GRA-002 · Graduación Vanguardia Moderna (Tecnológico)</option>
+            </optgroup>
           </select>
         </div>
 

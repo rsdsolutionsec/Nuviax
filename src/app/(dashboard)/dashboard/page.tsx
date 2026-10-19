@@ -199,7 +199,19 @@ export default async function DashboardPage() {
                       <span>Invitados</span>
                     </Link>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      {event.demo_token && !event.demo_revoked && (
+                        <a
+                          href={`/preview/${event.demo_token}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-pink-300 transition-colors"
+                          title="Ver Demo Privada"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+
                       <Link
                         href={`/dashboard/events/${event.id}/edit`}
                         className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
@@ -208,7 +220,7 @@ export default async function DashboardPage() {
                         <Edit className="w-3.5 h-3.5" />
                       </Link>
 
-                      {event.status === 'published' && (
+                      {event.status === 'published' ? (
                         <a
                           href={`/${event.slug}`}
                           target="_blank"
@@ -218,6 +230,14 @@ export default async function DashboardPage() {
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
+                      ) : (
+                        <Link
+                          href={`/dashboard/events/${event.id}/checkout`}
+                          className="px-2.5 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-[11px] transition-colors shadow-sm"
+                          title="Contratar Plan y Publicar"
+                        >
+                          Activar
+                        </Link>
                       )}
                     </div>
                   </div>

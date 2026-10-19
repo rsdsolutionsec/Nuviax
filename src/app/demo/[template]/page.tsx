@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
 import { CountdownTimer } from '@/components/invitation/CountdownTimer'
 import { PublicRsvpModal } from '@/components/invitation/PublicRsvpModal'
 import {
@@ -19,90 +20,65 @@ interface DemoProps {
   params: Promise<{ template: string }>
 }
 
-const DEMOS_CONFIG: Record<string, any> = {
-  'boda-elegance-gold': {
-    title: 'Ana & Carlos',
-    subtitle: 'Nuestra Boda',
-    hosts: 'Ana Lucía Silva & Carlos Mendoza',
-    quote: 'Dos vidas, un solo corazón latiendo juntos.',
-    date: '2026-11-28T17:00:00Z',
-    ceremony: {
-      name: 'Ceremonia Religiosa',
-      time: '17:00',
-      location_name: 'Parroquia Nuestra Señora de la Paz',
-      address: 'Av. Las Palmas # 120, El Poblado',
-      map_url: 'https://maps.google.com',
-    },
-    reception: {
-      name: 'Recepción & Fiesta',
-      time: '19:30',
-      location_name: 'Hacienda Real Los Rosales',
-      address: 'Km 14 Vía Campestre',
-      map_url: 'https://maps.google.com',
-    },
-    itinerary: [
-      { time: '17:00', title: 'Llegada de invitados & Ceremonia' },
-      { time: '18:30', title: 'Sesión de Fotos & Cóctel de Bienvenida' },
-      { time: '20:00', title: 'Cena de Gala & Brindis' },
-      { time: '21:30', title: 'Primer Baile de Esposos & Fiesta' },
-    ],
-    dress_code: 'Rigurosa Etiqueta / Traje Formal Oscuro',
-    gifts: {
-      message: 'Su presencia es nuestro mayor regalo. Si desean tener un detalle con nosotros, dispondremos de lluvia de sobres el día del evento.',
-    },
+const DEFAULT_DEMO = {
+  title: 'Ana & Carlos',
+  subtitle: 'Nuestra Boda',
+  hosts: 'Ana Lucía Silva & Carlos Mendoza',
+  quote: 'Dos vidas, un solo corazón latiendo juntos.',
+  date: '2026-11-28T17:00:00Z',
+  ceremony: {
+    name: 'Ceremonia Religiosa',
+    time: '17:00',
+    location_name: 'Parroquia Nuestra Señora de la Paz',
+    address: 'Av. Las Palmas # 120, El Poblado',
+    map_url: 'https://maps.google.com',
   },
-  'quince-glam-sparkle': {
-    title: 'Mis XV Años · Valentina',
-    subtitle: 'Una Noche Mágica',
-    hosts: 'Valentina Martínez & Familia',
-    quote: 'Agradezco a Dios por estos quince años de risas, aprendizajes y bendiciones.',
-    date: '2026-12-15T20:00:00Z',
-    reception: {
-      name: 'Salón Real Crystal',
-      time: '20:00',
-      location_name: 'Hotel Grand Palace',
-      address: 'Calle 45 # 12-80',
-      map_url: 'https://maps.google.com',
-    },
-    itinerary: [
-      { time: '20:00', title: 'Recepción de Invitados' },
-      { time: '21:00', title: 'Entrada Triunfal & Vals de las 15 Rosas' },
-      { time: '22:00', title: 'Banquete & Show de Luces' },
-      { time: '23:30', title: 'Hora Loca Neón & DJ en Vivo' },
-    ],
-    dress_code: 'Gala Elegante (Se reserva el color esmeralda para la quinceañera)',
-    gifts: {
-      message: 'Lluvia de sobres y mesa de regalos.',
-    },
+  reception: {
+    name: 'Recepción & Fiesta',
+    time: '19:30',
+    location_name: 'Hacienda Real Los Rosales',
+    address: 'Km 14 Vía Campestre',
+    map_url: 'https://maps.google.com',
   },
-  'cumple-neon-fest': {
-    title: 'Sebastián · Level 30',
-    subtitle: 'Celebración de Cumpleaños',
-    hosts: 'Sebastián & Amigos',
-    quote: 'La vida comienza a los 30. ¡Ven a brindar conmigo!',
-    date: '2026-11-20T21:00:00Z',
-    reception: {
-      name: 'Sky Lounge Rooftop',
-      time: '21:00',
-      location_name: 'Torre Central Piso 18',
-      address: 'Av. Empresarial 500',
-      map_url: 'https://maps.google.com',
-    },
-    itinerary: [
-      { time: '21:00', title: 'Open Bar & DJ Set' },
-      { time: '23:00', title: 'Brindis de Cumpleaños' },
-      { time: '01:00', title: 'Tacos & After Party' },
-    ],
-    dress_code: 'Casual Chic / Cóctel Nocturno',
-    gifts: {
-      message: '¡Tu presencia y ganas de bailar son el mejor regalo!',
-    },
+  itinerary: [
+    { time: '17:00', title: 'Llegada de invitados & Ceremonia' },
+    { time: '18:30', title: 'Sesión de Fotos & Cóctel de Bienvenida' },
+    { time: '20:00', title: 'Cena de Gala & Brindis' },
+    { time: '21:30', title: 'Primer Baile de Esposos & Fiesta' },
+  ],
+  dress_code: 'Rigurosa Etiqueta / Traje Formal Oscuro',
+  gifts: {
+    message: 'Su presencia es nuestro mayor regalo. Si desean tener un detalle con nosotros, dispondremos de lluvia de sobres el día del evento.',
   },
 }
 
 export default async function DemoPage({ params }: DemoProps) {
   const { template } = await params
-  const config = DEMOS_CONFIG[template] || DEMOS_CONFIG['boda-elegance-gold']
+  const supabase = await createClient()
+
+  // 1. Query template from database by slug or uppercase code
+  const { data: dbTemplate } = await supabase
+    .from('templates')
+    .select('*, categories(name)')
+    .or(`code.eq.${template.toUpperCase()},slug.eq.${template}`)
+    .maybeSingle()
+
+  const example = dbTemplate?.example_data || {}
+
+  const config = {
+    title: example.title || dbTemplate?.name || DEFAULT_DEMO.title,
+    subtitle: example.subtitle || dbTemplate?.categories?.name || DEFAULT_DEMO.subtitle,
+    hosts: example.hosts || DEFAULT_DEMO.hosts,
+    quote: example.quote || DEFAULT_DEMO.quote,
+    date: example.date || DEFAULT_DEMO.date,
+    ceremony: example.ceremony || DEFAULT_DEMO.ceremony,
+    reception: example.reception || DEFAULT_DEMO.reception,
+    itinerary: example.itinerary || DEFAULT_DEMO.itinerary,
+    dress_code: example.dress_code || DEFAULT_DEMO.dress_code,
+    gifts: example.gifts || DEFAULT_DEMO.gifts,
+  }
+
+  const templateCode = dbTemplate?.code || template
 
   return (
     <div className="min-h-screen bg-[#070510] text-[#F8FAFC]">
@@ -117,11 +93,11 @@ export default async function DemoPage({ params }: DemoProps) {
         </Link>
         <span className="w-1 h-1 rounded-full bg-slate-600" />
         <span className="text-[11px] text-pink-400 font-bold uppercase tracking-wider">
-          Modo Demostración
+          Demo: {templateCode}
         </span>
         <span className="w-1 h-1 rounded-full bg-slate-600" />
         <Link
-          href={`/dashboard/events/new?template=${template}`}
+          href={`/dashboard/events/new?template=${templateCode}`}
           className="rsd-glow-button text-xs font-bold text-white px-3 py-1 rounded-full"
         >
           Usar esta plantilla
@@ -226,7 +202,7 @@ export default async function DemoPage({ params }: DemoProps) {
         </div>
         <div>
           <h3 className="text-xl font-bold text-white">Mesa de Regalos</h3>
-          <p className="text-sm text-slate-400 mt-1">{config.gifts.message}</p>
+          <p className="text-sm text-slate-400 mt-1">{config.gifts?.message}</p>
         </div>
       </section>
 

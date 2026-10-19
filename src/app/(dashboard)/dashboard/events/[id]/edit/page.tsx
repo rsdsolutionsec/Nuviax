@@ -20,6 +20,12 @@ import {
   Loader2,
   Smartphone,
   ExternalLink,
+  Copy,
+  RotateCcw,
+  ShieldOff,
+  Lock,
+  CreditCard,
+  Share2,
 } from 'lucide-react'
 
 export default function EventEditorPage({
@@ -35,8 +41,15 @@ export default function EventEditorPage({
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'details' | 'locations' | 'extras'>('details')
+  const [activeTab, setActiveTab] = useState<'details' | 'locations' | 'extras' | 'demo'>('details')
   const [showMobilePreview, setShowMobilePreview] = useState(false)
+
+  // Demo token state
+  const [demoToken, setDemoToken] = useState<string | null>(null)
+  const [demoRevoked, setDemoRevoked] = useState(false)
+  const [demoExpiresAt, setDemoExpiresAt] = useState<string | null>(null)
+  const [copiedDemo, setCopiedDemo] = useState(false)
+  const [isDemoActionLoading, setIsDemoActionLoading] = useState(false)
 
   // Event state
   const [title, setTitle] = useState('')
@@ -116,10 +129,70 @@ export default function EventEditorPage({
         setReceptionAddress(content.reception.address || '')
         setReceptionMap(content.reception.map_url || '')
       }
+
+      setDemoToken(data.demo_token || null)
+      setDemoRevoked(!!data.demo_revoked)
+      setDemoExpiresAt(data.demo_expires_at || null)
     } catch {
       setErrorMessage('Error al cargar la información del evento.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleCopyDemo = () => {
+    if (!demoToken) return
+    const url = `${window.location.origin}/preview/${demoToken}`
+    navigator.clipboard.writeText(url)
+    setCopiedDemo(true)
+    setTimeout(() => setCopiedDemo(false), 2500)
+  }
+
+  const handleRegenerateDemo = async () => {
+    setIsDemoActionLoading(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.rpc('regenerate_demo_token', {
+        p_event_id: eventId,
+      })
+      if (error) {
+        setErrorMessage(error.message)
+        return
+      }
+      if (data && (data as any).demo_token) {
+        setDemoToken((data as any).demo_token)
+        setDemoRevoked(false)
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 3000)
+      }
+    } catch {
+      setErrorMessage('No se pudo regenerar el enlace de demostración.')
+    } finally {
+      setIsDemoActionLoading(false)
+    }
+  }
+
+  const handleRevokeDemo = async () => {
+    if (!confirm('¿Seguro que deseas revocar este enlace de demo? Nadie podrá acceder hasta que generes uno nuevo.')) {
+      return
+    }
+    setIsDemoActionLoading(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.rpc('revoke_demo_token', {
+        p_event_id: eventId,
+      })
+      if (error) {
+        setErrorMessage(error.message)
+        return
+      }
+      setDemoRevoked(true)
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000)
+    } catch {
+      setErrorMessage('No se pudo revocar el enlace de demostración.')
+    } finally {
+      setIsDemoActionLoading(false)
     }
   }
 
@@ -239,14 +312,13 @@ export default function EventEditorPage({
               <span className="hidden sm:inline">Ver Online</span>
             </a>
           ) : (
-            <button
-              onClick={() => handleSave(true)}
-              disabled={isSaving}
-              className="rsd-glow-button px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-md disabled:opacity-50"
+            <Link
+              href={`/dashboard/events/${eventId}/checkout`}
+              className="rsd-glow-button px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-md"
             >
-              <Globe className="w-3.5 h-3.5" />
-              <span>Publicar</span>
-            </button>
+              <CreditCard className="w-3.5 h-3.5 text-pink-300" />
+              <span>Activar Plan</span>
+            </Link>
           )}
 
           <button
@@ -278,7 +350,7 @@ export default function EventEditorPage({
           )}
 
           {/* Section tabs */}
-          <div className="flex items-center gap-2 border-b border-purple-900/20 pb-4 mb-8">
+          <div className="flex flex-wrap items-center gap-2 border-b border-purple-900/20 pb-4 mb-8">
             <button
               onClick={() => setActiveTab('details')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
@@ -308,6 +380,20 @@ export default function EventEditorPage({
               }`}
             >
               3. Regalos & Vestimenta
+            </button>
+            <button
+              onClick={() => setActiveTab('demo')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                activeTab === 'demo'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white/5 text-slate-400 hover:text-white'
+              }`}
+            >
+              <Share2 className="w-3 h-3 text-pink-400" />
+              <span>4. Demo Privada</span>
+              {demoToken && !demoRevoked && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              )}
             </button>
           </div>
 
@@ -531,6 +617,150 @@ export default function EventEditorPage({
                   className="w-full px-4 py-3 rounded-xl bg-[#120E24] border border-purple-900/30 text-white text-sm focus:outline-none focus:border-purple-500"
                 />
               </div>
+            </div>
+          )}
+
+          {/* TAB 4: DEMO PRIVADA */}
+          {activeTab === 'demo' && (
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#16102D] to-[#0F0B1E] border border-purple-900/40 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center">
+                      <Share2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white">Demostración Privada Gratuita</h3>
+                      <p className="text-xs text-slate-400">Comparte tu maqueta en vivo antes de pagar</p>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      demoRevoked
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        : demoToken
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    }`}
+                  >
+                    {demoRevoked ? 'Revocado' : demoToken ? 'Enlace Activo' : 'Sin Generar'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Envía este enlace privado a tu pareja, familia o amigos para que revisen los textos, colores y diseño interactivo. Nadie podrá editar tu evento, ni consultar invitados, ni hacer confirmaciones RSVP reales.
+                </p>
+
+                {demoToken && !demoRevoked ? (
+                  <div className="space-y-3 pt-2">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      URL del Enlace Privado:
+                    </label>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <div className="flex-1 px-3 py-2.5 rounded-xl bg-[#080512] border border-purple-900/40 text-xs font-mono text-purple-300 truncate">
+                        {typeof window !== 'undefined' ? `${window.location.origin}/preview/${demoToken}` : `/preview/${demoToken}`}
+                      </div>
+                      <button
+                        onClick={handleCopyDemo}
+                        className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        {copiedDemo ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                            <span>¡Copiado!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copiar</span>
+                          </>
+                        )}
+                      </button>
+                      <a
+                        href={`/preview/${demoToken}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border border-white/10"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Abrir</span>
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+                    El enlace de demostración privada se encuentra actualmente revocado o inactivo. Genera uno nuevo a continuación para volver a compartirlo.
+                  </div>
+                )}
+
+                {/* Management action buttons */}
+                <div className="pt-4 border-t border-purple-900/20 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={handleRegenerateDemo}
+                    disabled={isDemoActionLoading}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-purple-600/20 text-purple-300 hover:text-white border border-purple-500/20 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    <RotateCcw className={`w-3.5 h-3.5 ${isDemoActionLoading ? 'animate-spin' : ''}`} />
+                    <span>{demoToken ? 'Regenerar Nuevo Enlace' : 'Generar Enlace Privado'}</span>
+                  </button>
+
+                  {demoToken && !demoRevoked && (
+                    <button
+                      onClick={handleRevokeDemo}
+                      disabled={isDemoActionLoading}
+                      className="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    >
+                      <ShieldOff className="w-3.5 h-3.5" />
+                      <span>Revocar Acceso</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Security guarantees */}
+              <div className="p-6 rounded-2xl bg-[#110D24] border border-purple-900/20 space-y-3">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                  Garantías de Seguridad & Privacidad RSD
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300">
+                  <div className="flex items-start gap-2">
+                    <Lock className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <span>Token criptográfico aleatorio no deducible.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Eye className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                    <span>Permiso estricto de solo lectura para invitados.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <span>RSVP simulado: no altera tu lista real de confirmados.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Globe className="w-4 h-4 text-pink-400 flex-shrink-0 mt-0.5" />
+                    <span>Bloqueo noindex para evitar rastreo en buscadores.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Call to action for activation */}
+              {status !== 'published' && (
+                <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-950/60 to-pink-950/60 border border-pink-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-white">¿Listo para publicar tu invitación oficial?</h4>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Elige un plan desde $19.99 USD para habilitar tu enlace público definitivo y activar la gestión de invitados RSVP.
+                    </p>
+                  </div>
+                  <Link
+                    href={`/dashboard/events/${eventId}/checkout`}
+                    className="rsd-glow-button px-5 py-2.5 rounded-xl text-white font-bold text-xs whitespace-nowrap shadow-lg flex items-center gap-1.5"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Contratar Plan</span>
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>

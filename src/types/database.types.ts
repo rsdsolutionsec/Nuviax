@@ -9,7 +9,8 @@ export type Json =
 export type EventStatus = 'draft' | 'published' | 'expired' | 'archived'
 export type RsvpStatus = 'pending' | 'confirmed' | 'declined'
 export type OrderStatus = 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled'
-export type UserRole = 'admin' | 'support' | 'customer'
+export type UserRole = 'admin' | 'advisor' | 'support' | 'customer'
+export type TemplateStatus = 'draft' | 'in_review' | 'approved' | 'published' | 'archived'
 
 export interface Profile {
   id: string
@@ -92,6 +93,11 @@ export interface Template {
   compatible_plans: string[]
   is_active: boolean
   display_order: number
+  version: number
+  status: TemplateStatus
+  assigned_developer: string | null
+  artistic_style: string | null
+  quality_checklist: Record<string, boolean>
   created_at: string
   updated_at: string
 }
@@ -162,6 +168,11 @@ export interface EventRecord {
   expires_at: string | null
   is_private: boolean
   private_passcode: string | null
+  demo_token: string | null
+  demo_expires_at: string | null
+  demo_revoked: boolean
+  template_version: number
+  entitlement_overrides: Record<string, Json>
   views_count: number
   created_at: string
   updated_at: string
@@ -192,6 +203,8 @@ export interface Order {
   amount: number
   currency: string
   status: OrderStatus
+  snapshot_features: Record<string, Json>
+  duration_days: number
   created_at: string
   updated_at: string
 }
@@ -204,5 +217,17 @@ export interface Payment {
   amount: number
   status: string
   raw_payload: Json | null
+  created_at: string
+}
+
+export interface AdminException {
+  id: string
+  event_id: string
+  admin_id: string
+  action_type: string
+  reason: string
+  previous_value: Json | null
+  new_value: Json | null
+  expires_at: string | null
   created_at: string
 }

@@ -3,286 +3,197 @@
 **Plataforma SaaS de Invitaciones Digitales Personalizadas**  
 **Desarrollado para:** RSD SOLUTIONS  
 **Fecha de Actualización:** 19 de Octubre de 2026  
-**Versión:** v1.0.0-rc1  
+**Versión:** v1.2.0 (Producción / Verificado)  
 
 ---
 
 ## 1. Visión del Producto y Principios de Diseño
 
-Nuviax es una plataforma SaaS moderna diseñada para permitir que cualquier persona cree, personalice, publique y administre invitaciones digitales interactivas para celebraciones personales (bodas, quinceañeras, cumpleaños, baby showers, aniversarios y eventos corporativos) sin requerir conocimientos técnicos ni contratar diseñadores externos.
+Nuviax es una plataforma SaaS moderna diseñada para permitir que cualquier persona cree, personalice, publique y administre invitaciones digitales interactivas para celebraciones personales (bodas, quinceañeras, cumpleaños, baby showers, aniversarios, bautizos, graduaciones y eventos corporativos) sin requerir conocimientos técnicos ni contratar diseñadores externos.
 
 ### Propuesta de Valor Central
-> *"Elige un diseño, personaliza tu invitación, compártela con tu propio enlace y administra tus invitados desde un solo lugar".*
+> *"Elige un diseño, personaliza tu invitación, compártela con un enlace privado de demostración y actívala cuando contrates el plan que necesitas."*
 
 ### Identidad Visual RSD SOLUTIONS
 El diseño de la plataforma equilibra la sofisticación tecnológica con la calidez emocional de las celebraciones:
-- **Colores de Superficie:** Fondos oscuros profundos (`#090714`, `#0C091C`) con acentos de cristal y desenfoque (`backdrop-blur-xl`).
+- **Colores de Superficie:** Fondos oscuros profundos (`#070510`, `#090714`, `#0B081A`, `#0C091C`) con acentos de cristal y desenfoque (`backdrop-blur-xl`).
 - **Gradientes y Resplandores:** Tonos violeta neón (`#7C3AED`), magenta brillante (`#EC4899`) y dorado champán (`#D4AF37`).
-- **Tipografía y Legibilidad:** Jerarquía tipográfica blanca nítida (`#F8FAFC`) con etiquetas en mayúsculas de espaciado amplio y fuentes clásicas según la plantilla (Cinzel, Playfair Display, Montserrat, Outfit).
+- **Tipografía y Legibilidad:** Jerarquía tipográfica blanca nítida (`#F8FAFC`) con etiquetas en mayúsculas de espaciado amplio y fuentes acordes a cada plantilla (Cinzel, Playfair Display, Montserrat, Outfit).
 - **Tarjetas y Botones:** Esquinas redondeadas amplias (`rounded-2xl`, `rounded-3xl`), bordes sutiles con resplandor púrpura (`rsd-glow-card`) y botones con gradientes reactivos al cursor (`rsd-glow-button`).
 
 ---
 
-## 2. Modelo de Usuarios y Roles de Seguridad
+## 2. Modelo de Usuarios y Roles de Seguridad (RBAC)
 
 El sistema implementa autorización en servidor a través de PostgreSQL Row Level Security (RLS) y comprobación de permisos en componentes de servidor Next.js.
 
 ### 2.1. Roles Disponibles
 1. **`customer` (Anfitrión / Cliente):**
    - Rol predeterminado para todo usuario registrado.
-   - Capacidad: Crear eventos, editar borradores, comprar planes, gestionar la lista de invitados de sus propios eventos, descargar reportes CSV y consultar estadísticas de sus invitaciones.
+   - Capacidad: Crear eventos, editar borradores, generar y compartir enlaces de demo privada (`/preview/[token]`), comprar planes, gestionar la lista de invitados de sus propios eventos, descargar reportes CSV y consultar estadísticas de sus invitaciones.
    - Restricción: No puede consultar ni modificar eventos, órdenes ni invitados pertenecientes a otros usuarios.
-2. **`admin` (Operador / Administrador RSD SOLUTIONS):**
+2. **`advisor` (Asesor Comercial):**
+   - Acceso exclusivo de **solo lectura** a la lista de clientes registrados y al estado general de sus eventos.
+   - Capacidad: Acompañar comercialmente al cliente, verificar qué plantilla eligió, comprobar el estado del pago y la vigencia contratada.
+   - Restricciones estrictas: **NO puede editar invitaciones**, no puede modificar precios ni planes, no puede alterar transacciones, no puede gestionar roles y **NO tiene acceso a la tabla de invitados ni a datos médicos/alergias**.
+3. **`admin` (Operador / Administrador RSD SOLUTIONS):**
    - Asignado explícitamente en la tabla `user_roles`.
-   - Capacidad: Acceso exclusivo a la consola `/admin`, visualización de métricas globales de plataforma, auditoría de eventos de todos los usuarios, supervisión de órdenes de compra y gestión del catálogo.
+   - Capacidad: Control total de la plataforma en `/admin`, métricas ejecutivas en tiempo real, gestión del directorio de usuarios, equipo de asesores, ciclo de vida de las 18 plantillas, eventos y vigencias, órdenes de compra, finanzas operativas, excepciones auditadas y logs del sistema.
    - Seguridad: La comprobación de rol se ejecuta en el servidor mediante la función `public.is_admin()`; nunca se confía en parámetros enviados por el navegador.
-3. **`support` (Soporte Técnico):**
+4. **`support` (Soporte Técnico):**
    - Rol reservado para atención al cliente y resolución de incidencias con permisos de solo lectura operativa.
 
 ---
 
 ## 3. Matriz de Planes Comerciales y Entitlements
 
-El acceso a las funcionalidades está regulado por el módulo centralizado de permisos [src/lib/entitlements/index.ts](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/src/lib/entitlements/index.ts).
+El acceso a las funcionalidades está regulado por el módulo centralizado de permisos [src/lib/entitlements/index.ts](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/src/lib/entitlements/index.ts) y respaldado por la tabla `plans` en PostgreSQL con snapshots históricos en la tabla `orders`.
 
 | Característica / Capacidad | Plan Esencial ($19.99) | Plan Interactiva ($29.99) | Plan Evento Pro ($49.99) |
 | :--- | :---: | :---: | :---: |
 | **Vigencia de Publicación** | 30 días post-evento | 90 días post-evento | 180 días post-evento |
 | **Enlace único personalizado (`/[slug]`)** | Sí | Sí | Sí |
-| **Ubicaciones y Enlaces Google Maps** | Sí | Sí | Sí |
-| **Portada Optimizada para WhatsApp** | Sí | Sí | Sí |
+| **Ubicaciones y Enlaces Google Maps** | Sí (Principal) | Sí (Ceremonia + Fiesta) | Sí (Ceremonia + Fiesta) |
+| **Portada Optimizada para WhatsApp (OG)** | Sí | Sí | Sí |
+| **Demostración Privada Gratuita (`/preview/[token]`)** | Sí | Sí | Sí |
 | **Cuenta Regresiva en Tiempo Real** | No | Sí | Sí |
-| **Música de Fondo Ambiental** | No | Sí | Sí |
+| **Música de Fondo Ambiental (Con Pausa)** | No | Sí | Sí |
 | **Galería Fotográfica** | Portada única | Hasta 8 fotos | Hasta 24 fotos |
 | **Confirmación de Asistencia (RSVP)** | No | Formulario básico | RSVP Avanzado + Acompañantes |
 | **Panel de Invitados y Métricas** | No | Conteo básico | Panel VIP (Filtros, Notas, Pases) |
-| **Control de Acompañantes Autorizados**| No | No | Sí |
-| **Restricciones y Alergias Dietarias** | No | No | Sí |
+| **Control de Acompañantes Autorizados**| No | No | Sí (Pases nominales) |
+| **Restricciones y Alergias Dietarias** | No | No | Sí (Protección reforzada) |
 | **Exportación de Lista a CSV/Excel** | No | No | Sí |
 | **Remoción de Marca de Agua** | No | No | Sí (Sin mención discreta) |
 
 ---
 
-## 4. Desglose Exhaustivo de Vistas, Módulos y Rutas
+## 4. Flujo de Demostración Privada, Compra y Activación
+
+El ciclo de vida comercial garantiza que el cliente experimente el valor antes de desembolsar dinero:
+
+```
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│ 1. Explorar     │ ────> │ 2. Probar Demo  │ ────> │ 3. Crear Cuenta │
+│    Catálogo     │       │    Funcional    │       │    y Borrador   │
+└─────────────────┘       └─────────────────┘       └─────────────────┘
+                                                             │
+                                                             ▼
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│ 6. Contratar    │ <──── │ 5. Compartir    │ <──── │ 4. Personalizar │
+│    Plan Único   │       │    Demo Privada │       │    en Editor    │
+└─────────────────┘       └─────────────────┘       └─────────────────┘
+         │
+         ▼
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│ 7. Orden con    │ ────> │ 8. Verificación │ ────> │ 9. Publicación  │
+│    Snapshot     │       │    de Pago      │       │    Oficial      │
+└─────────────────┘       └─────────────────┘       └─────────────────┘
+```
+
+### Arquitectura de la Demo Privada (`/preview/[token]`)
+- **Token no deducible:** Generado mediante `md5(random()::text || clock_timestamp()::text)`.
+- **Ruta dedicada:** `src/app/preview/[token]/page.tsx` independiente del slug público.
+- **Acceso seguro:** Vista de solo lectura. No permite editar, ni ver paneles administrativos, ni leer la lista de invitados.
+- **RSVP Simulado / Bloqueado:** Muestra un modal informativo aclarando que es una demostración y no altera la base de datos real.
+- **Protección SEO:** Encabezado y etiqueta `noindex, nofollow` para evitar que Google rastree el borrador.
+- **Revocación y Regeneración:** El anfitrión puede revocar el token o generar uno nuevo en cualquier momento desde la pestaña "Demo Privada" del editor.
+
+---
+
+## 5. Biblioteca de 18 Plantillas y Distribución Técnica
+
+La plataforma cuenta con 18 plantillas activas estructuradas bajo un contrato técnico común ([src/lib/templates/contract.ts](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/src/lib/templates/contract.ts)), distribuidas entre 3 frentes de desarrollo:
+
+### Frente A — Programador A (Bodas, Aniversarios y Parejas)
+1. **`BOD-001` (Boda Imperial Gold):** Gala tradicional, detalles dorados, tipografía romana clásica.
+2. **`BOD-002` (Boda Jardín Botánico):** Estilo campestre chic, acuarela de eucalipto, caligrafía orgánica.
+3. **`BOD-003` (Boda Minimalista Noir):** Blanco y negro editorial, arquitectura gráfica depurada.
+4. **`BOD-004` (Boda Bohemia Terracota):** Tonos terracota cálidos, pampas secas y romance al atardecer.
+5. **`PAR-001` (Aniversario Bodas de Plata & Oro):** Festejo de décadas de unión con acentos de plata noble.
+6. **`PAR-002` (Compromiso & Velada Romántica):** Cena íntima, luz de velas y propuesta de matrimonio.
+
+### Frente B — Programador B (Cumpleaños Adultos/Infantiles y Quinceañeras)
+7. **`CUM-001` (Cumpleaños Midnight Glam):** Cóctel nocturno VIP, bengalas, open bar y DJ.
+8. **`CUM-002` (Neon Party Retro Wave):** Cyberpunk juvenil, luces cian y magenta neón.
+9. **`CUM-003` (Tropical Sunset Celebration):** Pool party, atardecer playero y estética caribeña.
+10. **`QUI-001` (Quinceañera Princesa Rosé):** Cuento de hadas, oro rosa, vals solemne y dedicatorias familiares.
+11. **`QUI-002` (Quinceañera Midnight Star):** Noche estrellada en azul zafiro, constelaciones y tiara brillante.
+12. **`KIS-001` (Aventura Galáctica Kids):** Cohetes, planetas ilustrados y juegos para niños.
+
+### Frente C — Programador C (Baby Showers, Bautizos y Graduaciones)
+13. **`BAB-001` (Baby Shower Dulce Nube):** Nubes acuarela, estrellas sonrientes y tonos pastel suaves.
+14. **`BAB-002` (Baby Shower Safari Acuarela):** Pequeños animales de la selva en tonos salvia y arena.
+15. **`BAU-001` (Bautizo Ángeles & Olivo):** Ramas de olivo doradas, espiritualidad y bendición de padrinos.
+16. **`BAU-002` (Bautizo Celeste Luz):** Blanco marfil, celeste sereno y tipografía angelical.
+17. **`GRA-001` (Graduación Magna Cum Laude):** Birrete académico, diploma dorado y azul marino formal.
+18. **`GRA-002` (Graduación Vanguardia Moderna):** Estética tecnológica para egresados universitarios.
+
+---
+
+## 6. Consola Administrativa Modular (`/admin`)
+
+La consola de administración está dividida en 9 submódulos independientes bajo el layout unificado `src/app/(admin)/admin/layout.tsx`:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                             MAPA DE RUTAS NUVIAX                            │
+│                       CONSOLA OPERATIVA RSD SOLUTIONS                       │
 ├───────────────────────┬─────────────────────────────────────────────────────┤
-│ Rutas Comerciales     │ / · /catalog · /pricing · /faq · /contact           │
-│ Rutas Legales         │ /legal/terms · /legal/privacy · /legal/retention    │
-│ Rutas de Autenticación│ /login · /register · /reset-password                │
-│ Rutas de Invitación   │ /[slug] (Invitación pública) · /demo/[template]     │
-│ Portal del Cliente    │ /dashboard · /dashboard/events/new                  │
-│                       │ /dashboard/events/[id]/edit                         │
-│                       │ /dashboard/events/[id]/guests                       │
-│                       │ /dashboard/events/[id]/checkout                     │
-│ Consola Administrativa│ /admin                                              │
-│ Endpoints de Servidor │ /api/rsvp                                           │
+│ 1. Dashboard Ejecutivo│ /admin                                              │
+│ 2. Clientes & Usuarios│ /admin/users                                        │
+│ 3. Equipo & Asesores  │ /admin/team                                         │
+│ 4. Gestión Plantillas │ /admin/templates                                    │
+│ 5. Eventos & Vigencias│ /admin/events                                       │
+│ 6. Órdenes & Pagos    │ /admin/orders                                       │
+│ 7. Finanzas & Métricas│ /admin/finances                                     │
+│ 8. Planes & Excepción │ /admin/plans                                        │
+│ 9. Auditoría Sistema  │ /admin/audit                                        │
 └───────────────────────┴─────────────────────────────────────────────────────┘
 ```
 
-### 4.1. Portal Público y Comercial
-
-#### A. Página de Inicio (`/`)
-- **Hero Section:** Título de alto impacto visual con texto gradiente violeta/magenta (`rsd-gradient-text`), descripción del producto y dos botones principales de llamada a la acción: "Explorar Diseños Disponibles" (lleva a `/catalog`) y "Ver Planes & Precios" (lleva a `/pricing`).
-- **Barra de Métricas:** Contadores rápidos de valor (100% Móvil, RSVP Instantáneo, URL Única, Cero apps para invitados).
-- **Cuadrícula de Propuesta de Valor:** 3 tarjetas interactivas explicando:
-  1. *URL Legible y Exclusiva:* Generación de slugs limpios para WhatsApp.
-  2. *Confirmación RSVP en Vivo:* Respuestas desde el celular sin login.
-  3. *Experiencia Interactiva Total:* Cuenta regresiva, mapas, itinerario y música.
-- **Colección de Diseños Destacados:** Tarjetas con vista previa real de invitaciones para Bodas, Quinceañeras y Cumpleaños, con enlaces a demostraciones interactivas.
-- **Comparativa de Planes:** Bloque de precios con el plan "Interactiva" destacado con borde fucsia neón y badge "Más Popular".
-- **Banner de Acción:** Invitación directa al catálogo de diseño.
-
-#### B. Catálogo de Plantillas (`/catalog`)
-- **Pills de Filtrado por Categoría:** Botones redondeados para filtrar al instante por categoría: *Todas, Bodas, Quinceañeras, Cumpleaños Adultos, Cumpleaños Niños, Baby Showers*.
-- **Tarjetas de Plantillas:** Cada tarjeta presenta:
-  - Imagen de portada de alta resolución.
-  - Badge de categoría y etiqueta de estado (*Popular, Nuevo*).
-  - Título y descripción estética.
-  - **Botón "Ver Demo":** Abre la demostración funcional interactiva en `/demo/[code]`.
-  - **Botón "Personalizar":** Conduce al asistente de creación de evento en `/dashboard/events/new?template=[code]`.
-
-#### C. Planes & Precios (`/pricing`)
-- Desglose detallado de los 3 planes comerciales (Esencial, Interactiva, Evento Pro).
-- Lista de funcionalidades con iconos de verificación esmeralda y morada.
-- Enlace directo a seleccionar el plan para comenzar a diseñar.
-
-#### D. Preguntas Frecuentes (`/faq`)
-- Acordeones estructurados con respuestas claras sobre:
-  - Cómo compartir por WhatsApp.
-  - Ausencia de requisitos de registro para los invitados.
-  - Control de pases y acompañantes autorizados.
-  - Comportamiento de invitaciones expiradas.
-  - Posibilidad de editar datos sin cambiar el enlace.
-
-#### E. Contacto & Soporte (`/contact`)
-- Tarjetas con información directa de soporte por correo electrónico corporativo (`soporte@rsdsolutions.com`) y canal de atención preferencial por WhatsApp para clientes de planes interactivos y pro.
-
-#### F. Páginas Legales (`/legal/terms`, `/legal/privacy`, `/legal/retention`)
-- Textos formales de términos de uso, no comercialización de datos personales y política de retención con período de gracia post-vencimiento.
+### 6.1. Detalle de Módulos Administrativos
+- **Dashboard Ejecutivo (`/admin`):** Ventas brutas acumuladas, ingresos netos operativos con fórmula visible, invitaciones publicadas vs borradores, tasa de conversión porcentual y tabla de actividad reciente.
+- **Clientes & Usuarios (`/admin/users`):** Directorio de perfiles, búsqueda por correo y nombre, roles asignados, conteo de eventos creados y estado de cuenta.
+- **Equipo & Asesores (`/admin/team`):** Gestión de usuarios con privilegios (`admin`, `advisor`, `support`), tabla de directivas de seguridad para asesores y auditoría de permisos.
+- **Gestión de Plantillas (`/admin/templates`):** Inventario de las 18 plantillas, trazabilidad por desarrollador asignado, estilos artísticos, número de versión, estado (`published`, `in_review`) y botón de apertura de demo.
+- **Eventos & Vigencias (`/admin/events`):** Buscador global por título, slug o cliente, filtros por estado (`published`, `draft`), verificación de fecha de expiración post-evento y acceso directo a la demo privada y publicación online.
+- **Órdenes & Pagos (`/admin/orders`):** Registro transaccional completo, IDs de orden, cliente comprador, plan contratado, importe en USD y estado del cobro (`completed`, `pending`).
+- **Finanzas & Métricas (`/admin/finances`):** Desglose financiero con fórmula transparente: `Ingreso Neto Operativo = Ventas Brutas - Comisión Pasarela (3.99% + $0.30 USD)`. Distribución de facturación por plan comercial (Esencial, Interactiva, Evento Pro).
+- **Planes & Excepciones (`/admin/plans`):** Matriz de límites y precios, política de inmutabilidad de compras históricas y registro auditable de la tabla `admin_exceptions` para extensiones de vigencia autorizadas.
+- **Registro de Auditoría (`/admin/audit`):** Trazabilidad inmutable de las últimas 50 operaciones sensibles con marca de tiempo, usuario responsable, acción ejecutada, entidad afectada, dirección IP y payload sanitizado.
 
 ---
 
-### 4.2. Flujo de Autenticación
+## 7. Desglose de Vistas del Cliente y Editor
 
-#### A. Inicio de Sesión (`/login`)
-- **Campos:** Correo electrónico y contraseña.
-- **Validaciones:** Control de formato y captura de errores de credenciales inválidas.
-- **Soporte de Redirección:** Parámetro `?redirect=` para enviar al usuario de vuelta a la página que intentaba visitar (por ejemplo, `/dashboard/events/new`).
-- **Enlace de Recuperación:** Acceso rápido a `/reset-password`.
+### 7.1. Dashboard del Cliente (`/dashboard`)
+- Tarjetas de métricas personales (Eventos Creados, Publicados, Visitas Totales).
+- Lista de eventos con insignias de estado (Publicada, Borrador, Expirada).
+- Acceso directo:
+  - Ver Demo Privada (`/preview/[token]`).
+  - Editar Invitación (`/dashboard/events/[id]/edit`).
+  - Gestionar Invitados RSVP (`/dashboard/events/[id]/guests`).
+  - Activar Plan / Pagar (`/dashboard/events/[id]/checkout`).
+  - Ver Online (`/[slug]`).
 
-#### B. Registro de Cuenta (`/register`)
-- **Campos:** Nombre completo, correo electrónico y contraseña (validación de mínimo 6 caracteres).
-- **Proceso:** Creación de cuenta en Supabase Auth y creación automática del registro en la tabla `profiles` mediante trigger PostgreSQL.
-- **Feedback:** Pantalla de confirmación con estado de verificación por correo electrónico.
-
-#### C. Restablecer Contraseña (`/reset-password`)
-- Envío de correo seguro con token de recuperación de Supabase Auth.
-
----
-
-### 4.3. Motor Dinámico de Invitación Pública (`/[slug]`)
-
-Este es el módulo central del producto para los invitados del evento:
-
-#### A. Metadatos SSR para Redes Sociales (`generateMetadata`)
-- Se ejecuta directamente en el servidor de Next.js antes de enviar el HTML al navegador.
-- Genera dinámicamente etiquetas:
-  - `og:title`: "Boda de Ana & Carlos — Invitación Exclusiva".
-  - `og:description`: Frase personalizada o dedicatoria del anfitrión.
-  - `og:image`: Portada del evento optimizada en resolución 1200x630.
-  - `twitter:card`: Formato tarjeta grande.
-- **Resultado:** Al pegar el enlace en WhatsApp, Telegram o iMessage, la vista previa con foto y título aparece al instante sin depender de JavaScript en el cliente.
-
-#### B. Manejo de Slugs Redirigidos y Eventos Expirados
-- **Redirección Atómica:** Si el slug fue cambiado por el anfitrión, el sistema consulta la tabla `slug_redirects` y redirige automáticamente al nuevo enlace mediante `redirect(`/${newSlug}`)`.
-- **404 Elegante:** Si el slug no existe, renderiza `not-found.tsx` con diseño corporativo.
-- **Pantalla Conmemorativa de Expiración:** Si el evento concluyó su vigencia, muestra un mensaje sobrio y elegante de agradecimiento conmemorando la fecha del evento sin exponer datos privados ni formularios de asistencia.
-
-#### C. Bloques Visuales de la Invitación
-1. **Hero de Bienvenida:** Subtítulo, nombres de los anfitriones, tipografía de gala, fecha formateada en español y frase memorable.
-2. **Cuenta Regresiva en Vivo (`<CountdownTimer />`):** Contador matemático animado por segundo mostrando días, horas, minutos y segundos restantes para el evento.
-3. **Sección Ceremonia & Recepción:**
-   - Tarjetas independientes con iconos temáticos.
-   - Hora del evento, nombre del recinto y dirección.
-   - **Botón "Cómo llegar en Google Maps":** Abre la aplicación de mapas o Waze en el celular del invitado.
-4. **Itinerario del Evento:** Cronograma con horas destacadas en bloques tipográficos monoespaciados y títulos de cada momento de la fiesta.
-5. **Código de Vestimenta (Dress Code):** Indicación del estilo de vestimenta formal o temática.
-6. **Mesa de Regalos:** Información sobre lluvia de sobres o datos de cuenta bancaria.
-7. **Llamado a la Confirmación RSVP:** Bloque inferior destacado con el botón de apertura del modal interactivo.
+### 7.2. Editor en Vivo (`/dashboard/events/[id]/edit`)
+- **Pestaña 1 (Datos Principales):** Título, subtítulo, nombres de anfitriones, fecha/hora y frase célebre.
+- **Pestaña 2 (Ubicaciones & Mapa):** Nombres, direcciones, horas y enlaces a Google Maps tanto para la Ceremonia como para la Recepción.
+- **Pestaña 3 (Regalos & Vestimenta):** Código de vestimenta (Dress Code), mensaje de lluvia de sobres y datos bancarios.
+- **Pestaña 4 (Demo Privada & Compartir):**
+  - Indicador de estado del enlace (Activo / Revocado).
+  - Caja de URL protegida con botón de copiado rápido y apertura en nueva pestaña.
+  - Botón de regeneración de token criptográfico.
+  - Botón de revocación de acceso.
+  - Tarjeta de garantías de seguridad RSD.
+  - Llamada a la acción para contratar plan cuando el evento es un borrador.
+- **Columna Derecha (Vista Previa Móvil):** Maqueta interactiva contenida dentro del bisel de un smartphone que refleja los cambios en tiempo real.
 
 ---
 
-### 4.4. Módulo de Gestión de Invitados y Asistencia (RSVP)
+## 8. Confirmación de Asistencia (RSVP) y Privacidad de Invitados
 
-#### A. Modal de Confirmación Pública (`<PublicRsvpModal />`)
-- **Acceso:** Cualquier persona que reciba el enlace público puede abrirlo desde su celular.
-- **Opciones de Asistencia:**
-  - Botón "¡Sí, asistiré!" (activa campos de acompañantes y restricciones).
-  - Botón "No podré asistir" (registra la respuesta declinada con agradecimiento).
-- **Campos:**
-  - *Nombre y Apellido:* Identifica a la persona o familia.
-  - *Acompañantes adicionales:* Selector numérico que respeta el límite máximo asignado al pase.
-  - *Restricciones dietarias:* Campo opcional (vegetariano, celíaco, alergias).
-  - *Dedicatoria:* Mensaje de felicitación para los anfitriones.
-- **Celebración Visual:** Al confirmar afirmativamente, se dispara un efecto de confetti multicolor en pantalla (`canvas-confetti`) con tonalidades magenta, violeta y dorado.
-- **Aislamiento Técnico:** El formulario se comunica con `/api/rsvp`, el cual valida los datos con Zod y llama a procedimientos almacenados PostgreSQL con privilegios `SECURITY DEFINER`. Los invitados jamás tienen acceso de lectura sobre los datos de otros invitados.
-
-#### B. Panel de Control de Invitados (`/dashboard/events/[id]/guests`)
-- **Métricas de Asistencia en Tiempo Real:**
-  1. *Registrados:* Total de invitados nominales en la base de datos.
-  2. *Confirmados:* Personas titulares que marcaron asistencia positiva.
-  3. *Pendientes:* Invitados que aún no han respondido.
-  4. *No Asistirán:* Invitados que declinaron la invitación.
-  5. *Asistentes Totales:* Suma matemática de anfitriones titulares confirmados + todos sus acompañantes confirmados.
-- **Herramientas de Filtrado y Búsqueda:**
-  - Búsqueda en vivo por nombre, apellido o nombre de grupo familiar.
-  - Botones de filtro rápido por estado (Todos, Confirmados, Pendientes, No Asistirán).
-- **Tabla de Gestión:**
-  - Nombre completo y fragmento seguro del token de pase.
-  - Nombre de familia o grupo.
-  - Pases totales autorizados vs. confirmados.
-  - Badge de estado coloreado (verde = confirmado, ámbar = pendiente, rojo = declinado).
-  - Restricciones dietarias y notas privadas.
-  - **Botón Copiar Enlace Personalizado:** Copia al portapapeles el enlace con token único (`nuviax.com/evento?t=token`) para enviar pases exclusivos con acompañantes predefinidos.
-  - **Botón Eliminar:** Borra al invitado tras confirmación de seguridad en el navegador.
-- **Exportación de Datos:**
-  - Botón "Exportar CSV" que genera y descarga al instante un archivo `.csv` compatible con Microsoft Excel y Google Sheets conteniendo la lista de invitados completa, estados y restricciones alimentarias.
-
----
-
-### 4.5. Asistente y Editor de Invitaciones
-
-#### A. Asistente de Creación (`/dashboard/events/new`)
-- **Generador Inteligente de Slugs:** Al escribir el título del evento (ej: "Boda de Ana & Carlos"), el sistema genera automáticamente el slug normalizado `ana-y-carlos`.
-- **Verificador de Disponibilidad en Tiempo Real:** Consulta a la base de datos si la URL ya está tomada por otro usuario e informa con un indicador verde ("Enlace disponible") o rojo ("No disponible").
-- **Bloqueo de Palabras Reservadas:** Impide registrar rutas críticas del sistema como `admin`, `api`, `login` o `pricing`.
-- **Selector de Plantilla y Fecha:** Inicializa el registro en estado `'draft'`.
-
-#### B. Editor en Vivo con Simulador Móvil (`/dashboard/events/[id]/edit`)
-- **Pestaña 1: Datos Principales:** Título, subtítulo, nombres de homenajeados, fecha/hora y pensamiento especial.
-- **Pestaña 2: Ubicaciones & Mapa:** Datos independientes para Ceremonia y Recepción con nombres de recintos, horarios, direcciones físicas y URLs de Google Maps.
-- **Pestaña 3: Regalos & Vestimenta:** Dress code, mensaje de lluvia de sobres y datos bancarios.
-- **Simulador Móvil Side-by-Side:** Marco de celular interactivo que renderiza los cambios de texto y diseño en vivo sin necesidad de recargar la página.
-- **Acciones:** "Guardar Borrador" (guarda en base de datos) y "Publicar" (activa el estado público en línea).
-
----
-
-### 4.6. Proceso de Pago y Activación (`/dashboard/events/[id]/checkout`)
-
-- Selector interactivo de planes con actualización del monto total a pagar.
-- Integración desacoplada mediante la interfaz `IPaymentProvider` y el adaptador `MockPaymentAdapter`.
-- En modo desarrollo/pruebas (`PAYMENTS_MODE=test`), permite validar el flujo completo de compra:
-  1. Crea el registro de orden en la tabla `orders` con estado `'completed'`.
-  2. Actualiza el `plan_id` del evento en la tabla `events`.
-  3. Calcula la fecha de expiración sumando los días de vigencia del plan (30, 90 o 180 días).
-  4. Cambia el estado del evento a `'published'` y redirige al anfitrión a su invitación activa.
-
----
-
-### 4.7. Consola Administrativa RSD SOLUTIONS (`/admin`)
-
-- **Protección Server-Side:** Comprueba en el servidor de Next.js si el usuario autenticado tiene el rol `'admin'` en la tabla `user_roles`. Si no lo tiene, redirige automáticamente a `/dashboard`.
-- **Panel de Métricas Globales:** Conteo en tiempo real de Total de Usuarios, Total de Eventos, Invitados Globales y Órdenes procesadas.
-- **Tabla de Auditoría de Eventos Recientes:** Monitoreo de los últimos 10 eventos creados en la plataforma con título, slug, correo del propietario, plan contratado, estado de publicación, fecha de creación y enlace de visualización directa.
-
----
-
-## 5. Esquema de Entidades y Base de Datos (PostgreSQL)
-
-```
-[auth.users] ────< [profiles] ────< [user_roles]
-                       │
-                       ├────< [orders] ────< [payments]
-                       │         │
-                       │         v
-                       └────< [events] ────< [guests]
-                                 │
-                                 ├────< [slug_redirects]
-                                 ├────< [event_domains]
-                                 │
-               [categories] ──< [templates]
-               [plans] ───────< [events]
-```
-
-1. **`profiles`:** Extensión del perfil del usuario registrado (nombre, email, avatar).
-2. **`user_roles`:** Roles de autorización administrativa (`admin`, `support`, `customer`).
-3. **`categories`:** Categorías maestras de eventos con orden de despliegue e icono.
-4. **`plans`:** Configuración de planes (Esencial, Interactiva, Evento Pro) con precios, días de vigencia y límites JSONB.
-5. **`templates`:** Definición declarativa de plantillas con esquemas de secciones permitidas y configuración predeterminada.
-6. **`events`:** Entidad central del evento con slug único, estado (`draft`, `published`, `expired`, `archived`), fechas y contenidos en JSONB.
-7. **`guests`:** Registro de invitados con token único no predecible, acompañantes autorizados/confirmados, estado RSVP y notas.
-8. **`orders` & `payments`:** Registro de transacciones comerciales desacopladas del proveedor de pago.
-9. **`slug_redirects`:** Historial de slugs anteriores para preservar enlaces compartidos en caso de renombrado.
-10. **`event_domains`:** Estructura preparada para conexión de dominios personalizados en fases posteriores.
-11. **`audit_logs`:** Registro de seguridad para trazabilidad de operaciones críticas.
-
----
-
-## 6. Procedimiento Obligatorio de Actualización
-
-Conforme a las reglas permanentes registradas en [AGENTS.md](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/AGENTS.md):
-- Este documento ([analisis.md](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/analisis.md)) y el informe de auditoría ([auditoria.md](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/auditoria.md)) deben actualizarse obligatoriamente al incorporar nuevas características, plantillas o vistas en la plataforma.
-- Toda ejecución debe concluir con un `git add .` y `git commit` descriptivo, dejando el comando `git push` reservado exclusivamente al usuario.
+- **Endpoint Seguro:** `/api/rsvp` validado con Zod y canalizado a las funciones RPC de PostgreSQL `submit_guest_rsvp` y `submit_open_rsvp`.
+- **Acompañantes Controlados:** El servidor valida que el número de acompañantes confirmados no supere el cupo asignado en el pase del invitado.
+- **Protección de Datos Sensibles:** Las restricciones alimentarias y alergias solo pueden ser leídas por el anfitrión del evento y administradores; los asesores comerciales y visitantes anónimos tienen acceso denegado por RLS.
+- **Exportación CSV:** Genera archivos compatibles con Microsoft Excel y Google Sheets, disponible exclusivamente para eventos con plan Evento Pro activo.
