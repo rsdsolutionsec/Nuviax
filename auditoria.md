@@ -154,6 +154,29 @@ Estado: Exitoso (Exit Code 0)
 - Se eliminó del registro (`/register`) la pantalla bloqueante de espera de confirmación de correo.
 - Al registrarse, el sistema crea la cuenta e inicia sesión automáticamente mediante Supabase Auth, redirigiendo al cliente de forma instantánea al `/dashboard`.
 
+### 6.4. Nueva Plantilla de Código Especializada: Cumpleaños Midnight Glam (`cumple-midnight-glam`)
+- **Código y Registro:** Registrada con el código canónico `cumple-midnight-glam` y mapeada a `CUM-001` en `src/templates/registry.ts`.
+- **Ubicación:** `src/templates/designs/cumple-midnight-glam/index.tsx`.
+- **Características Visuales y Dinámicas:**
+  - Estética *Midnight Glam & Neon Velvet*: Fondo degradado profundo (`#080415` a `#120924`) con orbes de resplandor ambiental flotantes con animación `@keyframes float-slow`.
+  - Destellos y badge de fiesta con animación de pulso y resplandor magenta/violeta.
+  - Título con tipografía editorial Syne/Cinzel y gradiente dorado/magenta reactivo.
+  - Contador regresivo en tiempo real integrado condicionalmente según entitlements del plan.
+  - Reproductor de música ambiental con animación de disco de vinilo y control de play/pause.
+  - Tarjetas de ubicaciones (fiesta/recepción) con badges de horario, links directos a Google Maps y efectos hover de elevación y borde brillante.
+  - Itinerario cronológico interactivo con iconos distintivos y animación de acento al pasar el cursor.
+  - Sección de mesa de regalos y datos de transferencia con botón de copiado al portapapeles con feedback visual en tiempo real.
+  - Modal de confirmación de asistencia RSVP integrado con confeti dinámico (`canvas-confetti`).
+
+### 6.5. Nuevas Guías de Creación y Despliegue de Plantillas
+- **Guía para Asesor Humano (`docs/GUIA_ASESOR_SUBIR_PLANTILLAS.md`):**
+  - Protocolo no técnico para preparar, estructurar y dar de alta plantillas en la plataforma.
+  - Pasos detallados para crear la plantilla en la Consola Administrativa (`/admin/templates`), cargar metadatos, definir paleta cromática, probar en `/demo/[template]` y asignar a eventos.
+  - Preguntas frecuentes y checklist de calidad visual y contenido.
+- **Guía Técnica para Agente de IA (`docs/GUIA_AGENTE_IA_PLANTILLAS.md`):**
+  - Especificación de ingeniería y estándares de código para que agentes de IA generen plantillas 100% compatibles sin introducir regresiones.
+  - Contrato tipado `InvitationTemplateProps`, estructura de directorios, manejo de assets, hooks permitidos, componentes obligatorios y checklist de validación con `npm run build`.
+
 ---
 
 ## 7. Estado de Git y Reglas de Desarrollo
@@ -161,6 +184,7 @@ Estado: Exitoso (Exit Code 0)
 - **Rama Actual:** `main`
 - **Control de Versiones:** Cambios estructurados mediante commits descriptivos locales.
 - **Regla Estricta Cumplida:** **Bajo ninguna circunstancia se ejecuta `git push`**. El comando de subida remota permanece reservado de forma exclusiva para el desarrollador principal.
-- **Archivos de Documentación Actualizados:** `auditoria.md`, `analisis.md`, `docs/GUIA_CREACION_PLANTILLAS.md`, `AGENTS.md`.
+- **Archivos de Documentación Actualizados:** `auditoria.md`, `analisis.md`, `docs/GUIA_CREACION_PLANTILLAS.md`, `docs/GUIA_ASESOR_SUBIR_PLANTILLAS.md`, `docs/GUIA_AGENTE_IA_PLANTILLAS.md`, `AGENTS.md`.
+
 
 

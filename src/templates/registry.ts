@@ -2,6 +2,7 @@ import { ComponentType } from 'react'
 import { InvitationTemplateProps } from '@/templates/types'
 import { UniversalBaseTemplate } from '@/templates/UniversalBaseTemplate'
 import { BodaImperialGoldTemplate } from '@/templates/designs/boda-imperial-gold'
+import { CumpleMidnightGlamTemplate } from '@/templates/designs/cumple-midnight-glam'
 
 /**
  * Normalizes template codes/slugs (including alphanumeric IDs like BOD-001)
@@ -46,6 +47,7 @@ export const TEMPLATE_CODE_MAP: Record<string, string> = {
   // CUMPLEAÑOS ADULTOS (Programador B)
   'cum-001': 'cumple-vintage-jazz',
   'cumpleanos-midnight-glam': 'cumple-vintage-jazz',
+  'cumple-midnight-glam': 'cumple-vintage-jazz',
   'cumple-vintage-jazz': 'cumple-vintage-jazz',
 
   'cum-002': 'cumple-neon-fest',
@@ -112,6 +114,14 @@ export const TEMPLATE_REGISTRY: Record<string, ComponentType<InvitationTemplateP
   'boda-imperial-gold': BodaImperialGoldTemplate,
   'boda-elegance-gold': BodaImperialGoldTemplate,
   'boda-boho-chic': BodaImperialGoldTemplate,
+
+  // Flagship Birthday Celebration Template (Midnight Glam / CUM-001 / Neon Fest)
+  'CUM-001': CumpleMidnightGlamTemplate,
+  'CUM-002': CumpleMidnightGlamTemplate,
+  'cumple-vintage-jazz': CumpleMidnightGlamTemplate,
+  'cumple-neon-fest': CumpleMidnightGlamTemplate,
+  'cumple-midnight-glam': CumpleMidnightGlamTemplate,
+  'neon-party-retro-wave': CumpleMidnightGlamTemplate,
 }
 
 /**

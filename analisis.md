@@ -237,7 +237,28 @@ Unifica la renderización en las 4 vistas del ciclo de vida del producto:
 - **Confirmación RSVP (`PublicRsvpModal`):** Modal interactivo con selector de acompañantes y animación de confeti mediante `canvas-confetti`.
 - **Integración de Mapas:** Enlaces directos a Google Maps para navegación GPS de invitados a ceremonias y recepciones.
 - **Mesa de Regalos & Transferencias:** Caja con botón de copiado rápido al portapapeles (`navigator.clipboard.writeText`) con confirmación visual de copiado.
-- **Guía de Desarrollo:** Documentada paso a paso en [docs/GUIA_CREACION_PLANTILLAS.md](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/docs/GUIA_CREACION_PLANTILLAS.md).
+- **Guía de Desarrollo Base:** Documentada paso a paso en [docs/GUIA_CREACION_PLANTILLAS.md](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/docs/GUIA_CREACION_PLANTILLAS.md).
+
+### 9.5. Catálogo de Diseños Codificados Especializados
+1. **`BodaImperialGoldTemplate` (`boda-elegance-gold` / `BOD-001`):**
+   - Temática de boda elegante clásica: Paleta oro champán y blanco marfil, tipografía Cinzel y Great Vibes, separadores de filigrana dorada, galería de fotos con zoom hover y confirmación RSVP.
+2. **`CumpleMidnightGlamTemplate` (`cumple-midnight-glam` / `CUM-001`):**
+   - Temática de cumpleaños moderna *Midnight Glam & Neon Velvet*:
+   - Paleta cromática: Fondo terciopelo oscuro (`#080415` a `#120924`), acentos magenta neón (`#F43F5E`, `#EC4899`), violeta eléctrico (`#8B5CF6`) y oro resplandeciente (`#F59E0B`).
+   - Orbes de resplandor ambiental flotantes con animación CSS `@keyframes float-slow`.
+   - Micro-animaciones de destellos, badges festivos con pulso y tarjetas con elevación hover (`hover:-translate-y-1.5`).
+   - Contador regresivo en tiempo real integrado condicionalmente por plan (`allow_countdown`).
+   - Reproductor flotante de música de fondo con disco de vinilo en rotación continua y control play/pause accesible (`allow_music`).
+   - Tarjetas de ubicación con badges de horario y enlaces GPS directos a Google Maps.
+   - Itinerario cronológico interactivo de la fiesta con iconos luminosos.
+   - Caja de regalos y transferencias bancarias con botón de copiado rápido (`navigator.clipboard.writeText`) y confirmación visual.
+   - Modal de confirmación RSVP (`PublicRsvpModal`) con lluvia de confeti dinámico (`canvas-confetti`).
+
+### 9.6. Documentación Operativa y Guías de Creación
+- **Guía para Asesores Comerciales y Diseñadores ([docs/GUIA_ASESOR_SUBIR_PLANTILLAS.md](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/docs/GUIA_ASESOR_SUBIR_PLANTILLAS.md)):**
+  - Protocolo para personal no programador: cómo recolectar activos, estructurar el JSON de contenido, dar de alta la plantilla en la Consola Administrativa (`/admin/templates`), probar en `/demo/[template]` y brindar soporte a clientes.
+- **Guía de Especificación Técnica para Agentes de IA ([docs/GUIA_AGENTE_IA_PLANTILLAS.md](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/docs/GUIA_AGENTE_IA_PLANTILLAS.md)):**
+  - Estándar técnico estricto para que un Agente de IA construya nuevas plantillas en código: cumplimiento del contrato `InvitationTemplateProps`, estructura atómica de carpetas, reglas de Tailwind CSS 4 / CSS puro sin dependencias externas pesadas, integración con `PublicRsvpModal`, `BackgroundMusicPlayer` y verificación obligatoria mediante `npm run build`.
 
 ---
 
