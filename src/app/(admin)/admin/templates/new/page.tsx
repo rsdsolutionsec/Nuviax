@@ -8,7 +8,13 @@ export const metadata = {
   description: 'Diseño, configuración visual y registro de nuevas plantillas de invitación.',
 }
 
-export default async function NewTemplatePage() {
+export default async function NewTemplatePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category_id?: string }>
+}) {
+  const resolvedParams = await searchParams
+  const defaultCategoryId = resolvedParams?.category_id || ''
   const supabase = await createClient()
 
   // Fetch categories from DB
@@ -47,7 +53,10 @@ export default async function NewTemplatePage() {
       </div>
 
       {/* Main Creation Form Component */}
-      <TemplateFormClient categories={categories || []} />
+      <TemplateFormClient
+        categories={categories || []}
+        defaultCategoryId={defaultCategoryId}
+      />
     </div>
   )
 }

@@ -273,12 +273,23 @@ Para garantizar compatibilidad retroactiva total entre los códigos de catálogo
 - El formulario de registro (`/register`) ejecuta `supabase.auth.signUp()` e inmediatamente inicia sesión activa en el cliente.
 - Se eliminó la pantalla intermedia de verificación de correo electrónico. El cliente es redirigido de inmediato a `/dashboard` para empezar a crear su invitación.
 
-### 10.3. Separación de Contextos (Administrador vs Cliente)
-- **Middleware Protector:** `src/lib/supabase/middleware.ts` detecta usuarios con sesión iniciada en `/login` y `/register`, redirigiendo automáticamente a `/admin` si poseen rol `admin` o `advisor`, o a `/dashboard` si son clientes.
-- **Barra de Navegación Reactiva:** `Navbar.tsx` consulta en tiempo real el estado de autenticación y los roles asignados:
-  - Si no hay sesión: Muestra "Iniciar Sesión" y "Crear Invitación".
-  - Si hay sesión de cliente: Muestra "Mi Panel" y "Cerrar Sesión" (oculta "Iniciar Sesión").
-  - Si hay sesión de administrador: Muestra "Consola Admin" (con distintivo y enlace directo a `/admin`), "Mi Panel" y "Cerrar Sesión".
-- **Identificación en Dashboard:** El panel de cliente (`/dashboard`) incluye un banner superior y botón en el encabezado cuando el usuario activo posee privilegios administrativos, permitiendo alternar sin confusión entre el panel comercial y la consola ejecutiva.
+### 10.3. Separación de Contextos Estricta (Administrador vs Cliente)
+- **Aislamiento Total de la Interfaz Pública:** La barra de navegación pública (`Navbar.tsx`), el pie de página y la página de inicio no contienen ningún enlace, botón o referencia a la consola administrativa ni a asesores.
+  - Visitantes anónimos: Muestra únicamente "Iniciar Sesión" y "Crear Invitación".
+  - Clientes autenticados: Muestra "Mi Panel" (`/dashboard`) y "Cerrar Sesión".
+- **Panel de Control del Cliente (`/dashboard`):** Diseñado exclusivamente para anfitriones y clientes. Permite crear eventos, ver planes, elegir plantillas y gestionar invitados, sin banners de aviso administrativo ni enlaces hacia `/admin`.
+- **Acceso Exclusivo a `/admin`:** La consola administrativa es accesible únicamente navegando de forma directa a la URL `/admin` y requiere autorización estricta en servidor. Se eliminó cualquier bypass de entorno local (`NODE_ENV`); solo las cuentas registradas con rol `admin` o `advisor` en PostgreSQL `user_roles` pueden ingresar. Si un cliente (como `rsdsolutions.ec@gmail.com`) intenta acceder a `/admin`, el middleware y el layout del servidor lo redirigen de inmediato a `/dashboard`.
+- **Registro Exclusivo de Clientes (`/register`):** Todo usuario creado desde la web pública se registra únicamente con rol `customer`. Los administradores y asesores comerciales se designan manualmente y de manera interna por la dirección.
+
+### 10.4. Organización de Plantillas por Tipo de Invitación y Catálogo Dinámico
+- **Consola de Plantillas por Categoría (`/admin/templates`):** Reestructurada completamente para clasificar el inventario bajo los 9 Tipos de Invitaciones del sistema (Bodas & Compromisos, Quinceañeras & Sweet 16, Cumpleaños Infantiles, Cumpleaños de Adultos, Graduaciones & Logros, Baby Showers & Revelación, Bautizos & Primera Comunión, Aniversarios y Eventos Especiales).
+  - Incluye métricas de inventario global (Total categorías, Total plantillas, Disponibles para clientes y Borradores).
+  - Cada tarjeta presenta el estado real (`DISPONIBLE CLIENTES` vs `BORRADOR / EN DESARROLLO`), el tipo de motor (`Código React Especializado` vs `Motor Declarativo Universal`) y un botón de activación en 1 clic que actualiza inmediatamente la base de datos vía API.
+  - Botón directo `+ Agregar Plantilla a este Tipo` que precarga la categoría en `/admin/templates/new?category_id=...`.
+- **Catálogo Público en Tiempo Real (`/catalog`):**
+  - Consulta en Supabase únicamente las plantillas activas (`is_active = true` y `status = 'published'`).
+  - Muestra actualmente las plantillas completamente operativas (`boda-elegance-gold` y `cumple-midnight-glam`).
+  - A medida que el equipo directivo y asesores den de alta o activen nuevas plantillas, estas aparecen automáticamente en el catálogo y en el selector de creación de eventos (`/dashboard/events/new`).
+
 
 

@@ -7,7 +7,6 @@ import {
   Menu,
   X,
   ArrowRight,
-  Shield,
   LayoutDashboard,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -16,7 +15,6 @@ import { SignOutButton } from '@/components/layout/SignOutButton'
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   const appName = process.env.NEXT_PUBLIC_APP_NAME || 'Nuviax'
@@ -31,22 +29,8 @@ export function Navbar() {
         } = await supabase.auth.getUser()
 
         setUser(currentUser)
-
-        if (currentUser) {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', currentUser.id)
-            .in('role', ['admin', 'advisor'])
-            .maybeSingle()
-
-          setIsAdmin(!!roleData)
-        } else {
-          setIsAdmin(false)
-        }
       } catch {
         setUser(null)
-        setIsAdmin(false)
       } finally {
         setIsLoading(false)
       }
@@ -58,19 +42,6 @@ export function Navbar() {
       async (event, session) => {
         const currentUser = session?.user || null
         setUser(currentUser)
-
-        if (currentUser) {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', currentUser.id)
-            .in('role', ['admin', 'advisor'])
-            .maybeSingle()
-
-          setIsAdmin(!!roleData)
-        } else {
-          setIsAdmin(false)
-        }
       }
     )
 
@@ -132,15 +103,6 @@ export function Navbar() {
               <>
                 {user ? (
                   <>
-                    {isAdmin && (
-                      <Link
-                        href="/admin"
-                        className="px-3.5 py-2 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-200 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-600/30 transition-all shadow-sm"
-                      >
-                        <Shield className="w-3.5 h-3.5 text-purple-400" />
-                        <span>Consola Admin</span>
-                      </Link>
-                    )}
                     <Link
                       href="/dashboard"
                       className="px-3.5 py-2 rounded-xl bg-white/5 border border-purple-900/30 text-slate-200 text-xs font-semibold flex items-center gap-1.5 hover:bg-white/10 hover:text-white transition-all"
@@ -221,16 +183,6 @@ export function Navbar() {
               <>
                 {user ? (
                   <>
-                    {isAdmin && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setIsOpen(false)}
-                        className="w-full text-center py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-200 font-bold text-xs flex items-center justify-center gap-2"
-                      >
-                        <Shield className="w-4 h-4 text-purple-400" />
-                        <span>Ir a Consola Admin</span>
-                      </Link>
-                    )}
                     <Link
                       href="/dashboard"
                       onClick={() => setIsOpen(false)}

@@ -67,10 +67,10 @@ Antes de registrar una plantilla en el sistema, reúne la siguiente información
 
 Si eres asesor o administrador y deseas publicar una nueva plantilla sin editar archivos de código:
 
-1. **Inicia sesión** en [Nuviax](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax) con tu correo de administrador (`rsdsolutions.ec@gmail.com` o tu correo autorizado).
-2. Dirígete a la **Consola Operativa:** haz clic en el botón superior **"🛡️ Consola Admin"** o navega directamente a:
+1. **Inicia sesión** en [Nuviax](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax) con tu correo de administrador autorizado (`robinsonsolorzano99@gmail.com` o el correo autorizado para el asesor).
+2. Dirígete a la **Consola Operativa:** ingresa directamente a la URL:
    ```
-   https://nuviax.com/admin/templates
+   https://nuviax.com/admin/templates (o http://localhost:3000/admin/templates en desarrollo)
    ```
 3. Haz clic en el botón **"+ Nueva Plantilla"** (ubicado en la esquina superior derecha).
 4. Completa el formulario de alta:

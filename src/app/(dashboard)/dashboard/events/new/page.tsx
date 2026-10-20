@@ -313,7 +313,7 @@ function NewEventForm() {
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-            Plantilla Seleccionada (18 Diseños Disponibles)
+            Plantilla de Diseño
           </label>
           <select
             value={templateCode}
@@ -323,47 +323,13 @@ function NewEventForm() {
             {dbTemplates.length > 0 ? (
               dbTemplates.map((t) => (
                 <option key={t.id} value={t.code}>
-                  {t.name} ({t.category?.name || 'General'})
+                  {t.name} ({t.category?.name || 'Celebración'})
                 </option>
               ))
             ) : (
               <>
-                <optgroup label="Bodas & Compromisos (Programador A)">
-                  <option value="boda-elegance-gold">Elegance Gold · Gala Clásica & Oro</option>
-                  <option value="boda-botanica-minimal">Botánica Minimal · Orgánico & Campestre</option>
-                  <option value="boda-dark-romance">Midnight Velvet · Gala Nocturna</option>
-                  <option value="boda-boho-sunset">Boho Chic Sunset · Terracota & Bohemio</option>
-                </optgroup>
-                <optgroup label="Aniversarios & Parejas (Programador A)">
-                  <option value="aniv-silver-jubilee">Bodas de Plata & Oro · 25 y 50 Años</option>
-                  <option value="compromiso-champagne">Champagne Engagement · Velada Romántica</option>
-                </optgroup>
-                <optgroup label="Cumpleaños Adultos (Programador B)">
-                  <option value="cumple-vintage-jazz">Vintage Gatsby Night · Jazz & Años 20</option>
-                  <option value="cumple-neon-fest">Neon Fest & Cocktails · Fiesta Cyberpunk</option>
-                </optgroup>
-                <optgroup label="Quinceañeras (Programador B)">
-                  <option value="quince-princesa-rosea">Rose Princess XV · Cuento de Hadas</option>
-                  <option value="quince-glam-sparkle">Glam Sparkle XV · Neón & Partículas</option>
-                </optgroup>
-                <optgroup label="Cumpleaños Infantiles (Programador B)">
-                  <option value="cumple-kids-aventura">Aventura Cósmica · Cohetes & Planetas</option>
-                  <option value="cumple-kids-safari">Safari Selvático · Acuarela Animales</option>
-                </optgroup>
-                <optgroup label="Baby Showers (Programador C)">
-                  <option value="baby-shower-pastel">Pastel Cloud & Bears · Dulce Nube</option>
-                  <option value="baby-revelacion-luz">Glow Gender Reveal · Predicción Niño/Niña</option>
-                </optgroup>
-                <optgroup label="Bautizos & Comunión (Programador C)">
-                  <option value="bautizo-luz-celestial">Luz Celestial & Olivo · Espiritual Blanco</option>
-                </optgroup>
-                <optgroup label="Graduaciones (Programador C)">
-                  <option value="graduacion-laurel-oro">Honor & Laurel · Magna Cum Laude</option>
-                  <option value="graduacion-modern-tech">Modern Vanguard Grad · Tecnológico & Fiesta</option>
-                </optgroup>
-                <optgroup label="Corporativo & Galas (Programador C)">
-                  <option value="gala-corporativa-lux">Executive Gala & Launch · RSD High-Tech</option>
-                </optgroup>
+                <option value="boda-elegance-gold">Boda Imperial Gold · Gala Clásica & Oro</option>
+                <option value="cumple-midnight-glam">Cumpleaños Midnight Glam · Neón Velvet & Luces</option>
               </>
             )}
           </select>

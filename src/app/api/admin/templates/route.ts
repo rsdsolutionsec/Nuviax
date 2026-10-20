@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       .eq('role', 'admin')
       .maybeSingle()
 
-    if (!roleData && process.env.NODE_ENV === 'production') {
+    if (!roleData) {
       return NextResponse.json({ error: 'Acceso denegado. Se requiere rol de administrador.' }, { status: 403 })
     }
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const { data: newTemplate, error: insertError } = await adminSupabase
       .from('templates')
       .insert({
-        code: data.code.toUpperCase(),
+        code: data.code.trim(),
         name: data.name,
         category_id: data.category_id,
         description: data.description,
@@ -124,8 +124,8 @@ export async function PUT(req: NextRequest) {
       .eq('role', 'admin')
       .maybeSingle()
 
-    if (!roleData && process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+    if (!roleData) {
+      return NextResponse.json({ error: 'Acceso denegado. Se requiere rol de administrador.' }, { status: 403 })
     }
 
     const body = await req.json()

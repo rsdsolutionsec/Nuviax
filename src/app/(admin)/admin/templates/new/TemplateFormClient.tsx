@@ -37,7 +37,13 @@ const PRESET_IMAGES = [
   { label: 'Graduación Birrete', url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80' },
 ]
 
-export function TemplateFormClient({ categories }: { categories: CategoryItem[] }) {
+export function TemplateFormClient({
+  categories,
+  defaultCategoryId,
+}: {
+  categories: CategoryItem[]
+  defaultCategoryId?: string
+}) {
   const router = useRouter()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -45,9 +51,13 @@ export function TemplateFormClient({ categories }: { categories: CategoryItem[] 
   const [success, setSuccess] = useState(false)
 
   // Form states
-  const [code, setCode] = useState('ROB-001')
+  const [code, setCode] = useState('BOD-005')
   const [name, setName] = useState('Boda Real Esmeralda')
-  const [categoryId, setCategoryId] = useState(categories[0]?.id || '')
+  const [categoryId, setCategoryId] = useState(
+    defaultCategoryId && categories.some((c) => c.id === defaultCategoryId)
+      ? defaultCategoryId
+      : categories[0]?.id || ''
+  )
   const [assignedDeveloper, setAssignedDeveloper] = useState('Robin (Admin/Owner)')
   const [artisticStyle, setArtisticStyle] = useState('Gala Clásica Imperial')
   const [description, setDescription] = useState(

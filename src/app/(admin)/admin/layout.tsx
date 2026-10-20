@@ -57,10 +57,9 @@ export default async function AdminLayout({
     .in('role', ['admin', 'advisor'])
     .maybeSingle()
 
-  const isLocalDev = process.env.NODE_ENV !== 'production'
-  const currentRole = userRole?.role || (isLocalDev ? 'admin' : null)
+  const currentRole = userRole?.role || null
 
-  if (!currentRole && !isLocalDev) {
+  if (!currentRole) {
     redirect('/dashboard')
   }
 

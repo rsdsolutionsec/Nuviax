@@ -148,7 +148,7 @@ Estado: Exitoso (Exit Code 0)
 - **Detección en Dashboard de Cliente:** En `/dashboard`, si el usuario tiene rol administrativo, se presenta un banner corporativo distintivo de aviso y un botón directo a la consola operativa `/admin`.
 - **Botón Unificado de Cierre de Sesión:** Creado `SignOutButton.tsx` e integrado en Navbar, Dashboard y Sidebar Administrativo.
 - **Corrección en Consola de Equipo:** Corregido el nombre de la columna en `src/app/(admin)/admin/team/page.tsx` de `created_at` a `granted_at` conforme al esquema de `user_roles`.
-- **Privilegios Garantizados:** Se verificó y aseguró el rol `admin` para las dos cuentas principales del propietario (`robinsonsolorzano99@gmail.com` y `rsdsolutions.ec@gmail.com`).
+- **Privilegios y Roles:** Se aseguró el rol `admin` de forma exclusiva para el desarrollador principal (`robinsonsolorzano99@gmail.com`). La cuenta registrada desde la web (`rsdsolutions.ec@gmail.com`) se mantiene como cliente normal (`customer`).
 
 ### 6.3. Desactivación del Flujo de Confirmación de Correo Electrónico
 - Se eliminó del registro (`/register`) la pantalla bloqueante de espera de confirmación de correo.
@@ -176,6 +176,26 @@ Estado: Exitoso (Exit Code 0)
 - **Guía Técnica para Agente de IA (`docs/GUIA_AGENTE_IA_PLANTILLAS.md`):**
   - Especificación de ingeniería y estándares de código para que agentes de IA generen plantillas 100% compatibles sin introducir regresiones.
   - Contrato tipado `InvitationTemplateProps`, estructura de directorios, manejo de assets, hooks permitidos, componentes obligatorios y checklist de validación con `npm run build`.
+
+### 6.6. Aislamiento Estricto de Roles y Sanitización de la Interfaz Pública
+- **Corrección de Cuenta Cliente:** Se removió el registro de `rsdsolutions.ec@gmail.com` de la tabla `public.user_roles`, estableciéndola estrictamente con rol de cliente (`customer`). El único administrador autorizado es `robinsonsolorzano99@gmail.com`. Los asesores comerciales se asignan exclusivamente de forma manual desde el panel directivo.
+- **Eliminación de Bypass de Desarrollo:** Se removió la condicional `isLocalDev ? 'admin' : null` de `src/app/(admin)/admin/layout.tsx` y `src/app/api/admin/templates/route.ts`. Ya no existe auto-elevación a administrador en entorno local; todo acceso a `/admin` requiere comprobación explícita en la tabla `user_roles`.
+- **Sanitización del Navbar y Dashboard Público:**
+  - `Navbar.tsx` se limpió por completo de enlaces, badges o referencias a "Consola Admin" o asesores.
+  - El dashboard del cliente (`/dashboard`) es un espacio puro para que el cliente gestione sus eventos, sin banners de aviso administrativo ni botones de redirección interna.
+  - El flujo de registro (`/register`) es exclusivamente para clientes y redirige directo a `/dashboard`.
+
+### 6.7. Reestructuración de Plantillas por Tipo de Invitación y Catálogo Dinámico
+- **Catálogo de Clientes Filtrado por Disponibilidad Real:**
+  - El catálogo público (`/catalog`) y el selector de eventos (`/dashboard/events/new`) ahora consultan de forma dinámica en Supabase únicamente las plantillas con `is_active = true` y `status = 'published'`.
+  - Actualmente disponibles en vivo: `boda-elegance-gold` ("Boda Imperial Gold") y `cumple-midnight-glam` ("Cumpleaños Midnight Glam").
+  - Las 17 plantillas restantes de siembra se marcaron como `status = 'draft'` e `is_active = false`, por lo que no se muestran a clientes hasta que el asesor o administrador las publique.
+- **Consola Administrativa de Plantillas por Categoría (`/admin/templates`):**
+  - Vista reorganizada por los **9 Tipos de Invitaciones** (Bodas, Quinceañeras, Cumpleaños Infantiles, Cumpleaños Adultos, Graduaciones, Baby Showers, Bautizos, Aniversarios y Eventos Especiales).
+  - Indicadores visuales de estado: `DISPONIBLE CLIENTES` (verde) y `BORRADOR / EN DESARROLLO` (ámbar).
+  - Identificación de motor de renderizado (`Código React Especializado` vs `Motor Declarativo Universal`).
+  - Botón de alternancia en 1 clic para activar o desactivar la disponibilidad pública de cualquier plantilla mediante llamada API `PUT /api/admin/templates`.
+  - Botón `+ Agregar Plantilla a este Tipo` que precarga la categoría en `/admin/templates/new?category_id=...`.
 
 ---
 
