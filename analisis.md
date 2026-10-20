@@ -239,3 +239,25 @@ Unifica la renderización en las 4 vistas del ciclo de vida del producto:
 - **Mesa de Regalos & Transferencias:** Caja con botón de copiado rápido al portapapeles (`navigator.clipboard.writeText`) con confirmación visual de copiado.
 - **Guía de Desarrollo:** Documentada paso a paso en [docs/GUIA_CREACION_PLANTILLAS.md](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/docs/GUIA_CREACION_PLANTILLAS.md).
 
+---
+
+## 10. Flujo de Autenticación, Separación de Roles y Creación Segura de Invitaciones
+
+### 10.1. Mapeo Canónico de Plantillas (`TEMPLATE_CODE_MAP`)
+Para garantizar compatibilidad retroactiva total entre los códigos de catálogo (`BOD-001`, `QUI-001`, `CUM-001`), enlaces publicitarios y la tabla `templates` en PostgreSQL, el módulo [src/templates/registry.ts](file:///c:/Users/Robin/Desktop/RSD%20Solutions/Nuviax/src/templates/registry.ts) centraliza la normalización a través de la función `normalizeTemplateCode`.
+- La creación de invitaciones (`/dashboard/events/new`) y la vista demo (`/demo/[template]`) resuelven de forma segura contra la columna `code` de la base de datos sin referenciar columnas inexistentes.
+- Fallback defensivo: Si una plantilla o plan solicitado no existe en base de datos, el sistema toma automáticamente el primer registro activo disponible, impidiendo errores de clave foránea (`events_template_id_fkey` o `events_plan_id_fkey`).
+
+### 10.2. Registro Directo sin Confirmación de Correo
+- El formulario de registro (`/register`) ejecuta `supabase.auth.signUp()` e inmediatamente inicia sesión activa en el cliente.
+- Se eliminó la pantalla intermedia de verificación de correo electrónico. El cliente es redirigido de inmediato a `/dashboard` para empezar a crear su invitación.
+
+### 10.3. Separación de Contextos (Administrador vs Cliente)
+- **Middleware Protector:** `src/lib/supabase/middleware.ts` detecta usuarios con sesión iniciada en `/login` y `/register`, redirigiendo automáticamente a `/admin` si poseen rol `admin` o `advisor`, o a `/dashboard` si son clientes.
+- **Barra de Navegación Reactiva:** `Navbar.tsx` consulta en tiempo real el estado de autenticación y los roles asignados:
+  - Si no hay sesión: Muestra "Iniciar Sesión" y "Crear Invitación".
+  - Si hay sesión de cliente: Muestra "Mi Panel" y "Cerrar Sesión" (oculta "Iniciar Sesión").
+  - Si hay sesión de administrador: Muestra "Consola Admin" (con distintivo y enlace directo a `/admin`), "Mi Panel" y "Cerrar Sesión".
+- **Identificación en Dashboard:** El panel de cliente (`/dashboard`) incluye un banner superior y botón en el encabezado cuando el usuario activo posee privilegios administrativos, permitiendo alternar sin confusión entre el panel comercial y la consola ejecutiva.
+
+

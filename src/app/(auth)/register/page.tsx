@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Sparkles, User, Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { Sparkles, User, Mail, Lock, ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -13,10 +13,45 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isSuccess, setIsSuccess] = useState(false)
 
   const appName = process.env.NEXT_PUBLIC_APP_NAME || 'Nuviax'
+
+  // If already authenticated, redirect immediately
+  useEffect(() => {
+    async function checkExistingAuth() {
+      try {
+        const supabase = createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (user) {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .in('role', ['admin', 'advisor'])
+            .maybeSingle()
+
+          const isAdmin = !!roleData
+          if (isAdmin) {
+            router.replace('/admin')
+          } else {
+            router.replace('/dashboard')
+          }
+          return
+        }
+      } catch {
+        // Continue to register form
+      } finally {
+        setIsCheckingSession(false)
+      }
+    }
+
+    checkExistingAuth()
+  }, [router])
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,22 +78,47 @@ export default function RegisterPage() {
 
       if (error) {
         setErrorMessage(error.message)
+        setIsLoading(false)
         return
       }
 
-      if (data.session) {
-        // Logged in immediately
+      // Email confirmation is deactivated in Supabase.
+      // If session is already created:
+      if (data?.session) {
         router.push('/dashboard')
         router.refresh()
-      } else {
-        // Confirmation email required
-        setIsSuccess(true)
+        return
       }
-    } catch (err: unknown) {
+
+      // Fallback: If session not returned directly, sign in immediately with credentials
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        // If signIn fails, redirect to /login
+        router.push('/login')
+      } else if (signInData.session) {
+        router.push('/dashboard')
+        router.refresh()
+      }
+    } catch {
       setErrorMessage('Ocurrió un error al procesar el registro.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#090714] px-4 py-12">
+        <div className="w-full max-w-md text-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-purple-400 mb-3" />
+          <p className="text-xs text-slate-400">Comprobando sesión activa...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -84,125 +144,102 @@ export default function RegisterPage() {
         </div>
 
         <div className="rsd-glow-card p-8 rounded-2xl shadow-2xl">
-          {isSuccess ? (
-            <div className="text-center py-6 space-y-4">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-bold text-white">¡Cuenta creada con éxito!</h3>
-              <p className="text-sm text-slate-300">
-                Hemos enviado un correo de confirmación a <span className="font-semibold text-purple-300">{email}</span>. Revisa tu bandeja de entrada para verificar tu cuenta.
-              </p>
-              <div className="pt-4">
-                <Link
-                  href="/login"
-                  className="rsd-glow-button inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-semibold"
-                >
-                  <span>Ir al Inicio de Sesión</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+          {errorMessage && (
+            <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleRegister} className="space-y-5">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                Nombre Completo
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Ej: Carolina Pérez"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#090714]/80 border border-purple-900/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+                />
               </div>
             </div>
-          ) : (
-            <>
-              {errorMessage && (
-                <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2.5">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
-                  <span>{errorMessage}</span>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                Correo Electrónico
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-4 h-4" />
                 </div>
-              )}
-
-              <form onSubmit={handleRegister} className="space-y-5">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    Nombre Completo
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                      <User className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Ej: Carolina Pérez"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#090714]/80 border border-purple-900/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    Correo Electrónico
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                      <Mail className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="ejemplo@correo.com"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#090714]/80 border border-purple-900/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    Contraseña
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                      <Lock className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="password"
-                      required
-                      minLength={6}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#090714]/80 border border-purple-900/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full rsd-glow-button py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Creando cuenta...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Crear mi cuenta</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-6 pt-6 border-t border-purple-900/20 text-center">
-                <p className="text-xs text-slate-400">
-                  ¿Ya tienes una cuenta?{' '}
-                  <Link
-                    href="/login"
-                    className="text-pink-400 hover:text-pink-300 font-semibold"
-                  >
-                    Inicia sesión
-                  </Link>
-                </p>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="ejemplo@correo.com"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#090714]/80 border border-purple-900/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+                />
               </div>
-            </>
-          )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                Contraseña
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#090714]/80 border border-purple-900/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full rsd-glow-button py-3.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Creando cuenta e iniciando sesión...</span>
+                </>
+              ) : (
+                <>
+                  <span>Crear mi cuenta</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-purple-900/20 text-center">
+            <p className="text-xs text-slate-400">
+              ¿Ya tienes una cuenta?{' '}
+              <Link
+                href="/login"
+                className="text-pink-400 hover:text-pink-300 font-semibold"
+              >
+                Inicia sesión
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

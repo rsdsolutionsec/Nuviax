@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { TemplateRenderer } from '@/templates/TemplateRenderer'
 import { ArrowLeft } from 'lucide-react'
 
+import { normalizeTemplateCode } from '@/templates/registry'
+
 interface DemoProps {
   params: Promise<{ template: string }>
 }
@@ -52,12 +54,22 @@ export default async function DemoPage({ params }: DemoProps) {
   const { template } = await params
   const supabase = await createClient()
 
-  // 1. Query template from database by slug or uppercase code
-  const { data: dbTemplate } = await supabase
+  // 1. Query template from database by code
+  const targetCode = normalizeTemplateCode(template)
+  let { data: dbTemplate } = await supabase
     .from('templates')
     .select('*, categories(name)')
-    .or(`code.eq.${template.toUpperCase()},slug.eq.${template}`)
+    .eq('code', targetCode)
     .maybeSingle()
+
+  if (!dbTemplate) {
+    const { data: rawTemplate } = await supabase
+      .from('templates')
+      .select('*, categories(name)')
+      .eq('code', template.toLowerCase())
+      .maybeSingle()
+    dbTemplate = rawTemplate
+  }
 
   const example = dbTemplate?.example_data || {}
 

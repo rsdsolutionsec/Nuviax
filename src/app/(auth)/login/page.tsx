@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -9,14 +9,52 @@ import { Sparkles, Mail, Lock, ArrowRight, AlertCircle, Loader2 } from 'lucide-r
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectPath = searchParams.get('redirect') || '/dashboard'
+  const redirectPath = searchParams.get('redirect')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const appName = process.env.NEXT_PUBLIC_APP_NAME || 'Nuviax'
+
+  // If already authenticated, redirect immediately
+  useEffect(() => {
+    async function checkExistingAuth() {
+      try {
+        const supabase = createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (user) {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .in('role', ['admin', 'advisor'])
+            .maybeSingle()
+
+          const isAdmin = !!roleData
+          if (redirectPath) {
+            router.replace(redirectPath)
+          } else if (isAdmin) {
+            router.replace('/admin')
+          } else {
+            router.replace('/dashboard')
+          }
+          return
+        }
+      } catch {
+        // Proceed with normal login form
+      } finally {
+        setIsCheckingSession(false)
+      }
+    }
+
+    checkExistingAuth()
+  }, [router, redirectPath])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +78,22 @@ function LoginForm() {
       }
 
       if (data.user) {
-        router.push(redirectPath)
+        // Check role to route correctly
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .in('role', ['admin', 'advisor'])
+          .maybeSingle()
+
+        const isAdmin = !!roleData
+        if (redirectPath) {
+          router.push(redirectPath)
+        } else if (isAdmin) {
+          router.push('/admin')
+        } else {
+          router.push('/dashboard')
+        }
         router.refresh()
       }
     } catch {
@@ -48,6 +101,15 @@ function LoginForm() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (isCheckingSession) {
+    return (
+      <div className="w-full max-w-md text-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-purple-400 mb-3" />
+        <p className="text-xs text-slate-400">Comprobando sesión activa...</p>
+      </div>
+    )
   }
 
   return (

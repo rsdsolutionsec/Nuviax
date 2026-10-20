@@ -130,10 +130,37 @@ Estado: Exitoso (Exit Code 0)
 
 ---
 
-## 6. Estado de Git y Reglas de Desarrollo
+## 6. Correcciones Críticas de Estabilidad y Autenticación (v1.2.1)
+
+### 6.1. Resolución de Violación de Clave Foránea (`events_template_id_fkey`)
+- **Causa Raíz:** El formulario de creación de eventos (`/dashboard/events/new`) consultaba la tabla `templates` buscando una columna inexistente `templates.slug` mediante `.or('code.eq...,slug.eq...')`, lo que producía un error Postgres `42703 (column does not exist)`. La consulta fallida retornaba `null`, activando un fallback peligroso con UUID ficticio `'00000000-0000-0000-0000-000000000001'` que no existía en la base de datos y disparaba el error de foreign key constraint.
+- **Solución Implementada:**
+  1. Se implementó el diccionario `TEMPLATE_CODE_MAP` y la función `normalizeTemplateCode` en `src/templates/registry.ts`, mapeando con total compatibilidad los 18 códigos alfanuméricos de catálogo (`BOD-001`, `PAR-001`, etc.) a los códigos de producción (`boda-elegance-gold`, etc.).
+  2. Se sustituyó la consulta defectuosa por `.eq('code', targetCode)` tanto en `events/new/page.tsx` como en `demo/[template]/page.tsx`.
+  3. Se eliminaron todos los UUIDs ficticios hardcodeados en el sistema (`events/new` y `checkout`), sustituyéndolos por búsqueda defensiva del primer registro activo en la tabla `templates` y `plans` respectivamente.
+  4. El selector `<select>` del formulario ahora carga dinámicamente las plantillas reales de Supabase al montar el componente, garantizando consistencia absoluta con la base de datos.
+
+### 6.2. Separación Visual y de Acceso: Rol Administrador vs Cliente
+- **Middleware Sincronizado:** En `src/lib/supabase/middleware.ts`, cuando un usuario autenticado accede a `/login` o `/register`, es redirigido inmediatamente a su panel correspondiente (`/admin` para administradores y asesores; `/dashboard` para clientes).
+- **Navbar Reactivo:** Se convirtió `Navbar.tsx` en un componente con estado reactivo a Supabase Auth. Si hay sesión activa:
+  - Para Administradores: Muestra acceso directo a `Consola Admin` (`/admin`), `Mi Panel` (`/dashboard`) y botón de `Cerrar Sesión`. Oculta por completo el botón "Iniciar Sesión".
+  - Para Clientes: Muestra acceso a `Mi Panel` y botón de `Cerrar Sesión`.
+- **Detección en Dashboard de Cliente:** En `/dashboard`, si el usuario tiene rol administrativo, se presenta un banner corporativo distintivo de aviso y un botón directo a la consola operativa `/admin`.
+- **Botón Unificado de Cierre de Sesión:** Creado `SignOutButton.tsx` e integrado en Navbar, Dashboard y Sidebar Administrativo.
+- **Corrección en Consola de Equipo:** Corregido el nombre de la columna en `src/app/(admin)/admin/team/page.tsx` de `created_at` a `granted_at` conforme al esquema de `user_roles`.
+- **Privilegios Garantizados:** Se verificó y aseguró el rol `admin` para las dos cuentas principales del propietario (`robinsonsolorzano99@gmail.com` y `rsdsolutions.ec@gmail.com`).
+
+### 6.3. Desactivación del Flujo de Confirmación de Correo Electrónico
+- Se eliminó del registro (`/register`) la pantalla bloqueante de espera de confirmación de correo.
+- Al registrarse, el sistema crea la cuenta e inicia sesión automáticamente mediante Supabase Auth, redirigiendo al cliente de forma instantánea al `/dashboard`.
+
+---
+
+## 7. Estado de Git y Reglas de Desarrollo
 
 - **Rama Actual:** `main`
 - **Control de Versiones:** Cambios estructurados mediante commits descriptivos locales.
 - **Regla Estricta Cumplida:** **Bajo ninguna circunstancia se ejecuta `git push`**. El comando de subida remota permanece reservado de forma exclusiva para el desarrollador principal.
 - **Archivos de Documentación Actualizados:** `auditoria.md`, `analisis.md`, `docs/GUIA_CREACION_PLANTILLAS.md`, `AGENTS.md`.
+
 

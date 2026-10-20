@@ -12,6 +12,7 @@ import {
   ArrowRight,
   ShieldAlert,
 } from 'lucide-react'
+import { SignOutButton } from '@/components/layout/SignOutButton'
 
 export const metadata = {
   title: 'Mi Panel',
@@ -24,6 +25,16 @@ export default async function DashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  // Check if current user has internal admin/advisor privileges
+  const { data: userRole } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user?.id || '')
+    .in('role', ['admin', 'advisor'])
+    .maybeSingle()
+
+  const isAdmin = userRole?.role === 'admin' || userRole?.role === 'advisor'
 
   // Fetch events belonging to user
   const { data: events = [] } = await supabase
@@ -50,23 +61,65 @@ export default async function DashboardPage() {
             <span className="font-extrabold text-lg text-white">Nuviax</span>
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span className="text-xs text-slate-400 hidden sm:inline-block">
               {user?.email}
             </span>
+
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="px-3 py-1.5 rounded-xl bg-purple-600/30 border border-purple-500/40 text-purple-200 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-600/50 transition-colors shadow-sm"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
+                <span>Consola Admin</span>
+              </Link>
+            )}
+
             <Link
               href="/dashboard/events/new"
-              className="rsd-glow-button text-xs font-bold text-white px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md"
+              className="rsd-glow-button text-xs font-bold text-white px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span>Nuevo Evento</span>
             </Link>
+
+            <SignOutButton />
           </div>
         </div>
       </header>
 
       {/* Main dashboard content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Admin Banner if logged in as Admin */}
+        {isAdmin && (
+          <div className="mb-8 p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
+                <ShieldAlert className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white flex items-center gap-2">
+                  <span>Modo Administrador Activo</span>
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    {userRole?.role === 'admin' ? 'Administrador Global' : 'Asesor'}
+                  </span>
+                </p>
+                <p className="text-[11px] text-purple-300/80 mt-0.5">
+                  Estás visualizando el panel de cliente. Puedes ingresar a la consola operativa en cualquier momento.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/admin"
+              className="rsd-glow-button px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 shrink-0 shadow-lg"
+            >
+              <span>Ir a Consola Operativa</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
+
         {/* Welcome Section */}
         <div className="mb-10">
           <h1 className="text-3xl font-extrabold text-white">

@@ -66,13 +66,30 @@ function CheckoutContent({ eventId }: { eventId: string }) {
       const planConfig = PLAN_CONFIGS[selectedPlan] || PLAN_CONFIGS.interactive
 
       // 1. Get plan record in DB
-      const { data: dbPlan } = await supabase
+      let { data: dbPlan } = await supabase
         .from('plans')
         .select('id')
         .eq('code', planConfig.code)
         .maybeSingle()
 
-      const planDbId = dbPlan?.id || '00000000-0000-0000-0000-000000000001'
+      if (!dbPlan) {
+        const { data: firstPlan } = await supabase
+          .from('plans')
+          .select('id')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        dbPlan = firstPlan
+      }
+
+      if (!dbPlan) {
+        setErrorMessage('No se encontró un plan activo disponible.')
+        setIsProcessing(false)
+        return
+      }
+
+      const planDbId = dbPlan.id
 
       // 2. Create Order in DB
       await supabase

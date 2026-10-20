@@ -41,7 +41,37 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Protected routes check
+  // 1. If user is ALREADY authenticated and visits /login or /register
+  if (user && (pathname === '/login' || pathname === '/register')) {
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .in('role', ['admin', 'advisor'])
+      .maybeSingle()
+
+    const isAdmin = !!roleData
+    const redirectParam = request.nextUrl.searchParams.get('redirect')
+
+    const url = request.nextUrl.clone()
+    url.searchParams.delete('redirect')
+
+    if (redirectParam && !redirectParam.startsWith('/login') && !redirectParam.startsWith('/register')) {
+      if (redirectParam.startsWith('/admin') && !isAdmin) {
+        url.pathname = '/dashboard'
+      } else {
+        url.pathname = redirectParam
+      }
+    } else if (isAdmin) {
+      url.pathname = '/admin'
+    } else {
+      url.pathname = '/dashboard'
+    }
+
+    return NextResponse.redirect(url)
+  }
+
+  // 2. Protected routes check for /dashboard
   if (pathname.startsWith('/dashboard') && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -49,6 +79,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // 3. Protected routes check for /admin
   if (pathname.startsWith('/admin')) {
     if (!user) {
       const url = request.nextUrl.clone()
@@ -57,12 +88,12 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // Verify admin role
+    // Verify admin or advisor role
     const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .eq('role', 'admin')
+      .in('role', ['admin', 'advisor'])
       .maybeSingle()
 
     if (!roleData) {

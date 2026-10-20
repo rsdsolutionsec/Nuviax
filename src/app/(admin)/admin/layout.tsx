@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Lock,
 } from 'lucide-react'
+import { SignOutButton } from '@/components/layout/SignOutButton'
 
 export const metadata = {
   title: 'Consola Operativa Nuviax | RSD SOLUTIONS',
@@ -132,6 +133,10 @@ export default async function AdminLayout({
             >
               Web Pública
             </Link>
+          </div>
+
+          <div className="pt-2 border-t border-purple-900/20">
+            <SignOutButton variant="sidebar" />
           </div>
         </div>
       </aside>

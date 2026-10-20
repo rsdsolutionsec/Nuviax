@@ -1,12 +1,83 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Sparkles, Menu, X, ArrowRight } from 'lucide-react'
+import {
+  Sparkles,
+  Menu,
+  X,
+  ArrowRight,
+  Shield,
+  LayoutDashboard,
+} from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { SignOutButton } from '@/components/layout/SignOutButton'
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
   const appName = process.env.NEXT_PUBLIC_APP_NAME || 'Nuviax'
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    async function checkUser() {
+      try {
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser()
+
+        setUser(currentUser)
+
+        if (currentUser) {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', currentUser.id)
+            .in('role', ['admin', 'advisor'])
+            .maybeSingle()
+
+          setIsAdmin(!!roleData)
+        } else {
+          setIsAdmin(false)
+        }
+      } catch {
+        setUser(null)
+        setIsAdmin(false)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    checkUser()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        const currentUser = session?.user || null
+        setUser(currentUser)
+
+        if (currentUser) {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', currentUser.id)
+            .in('role', ['admin', 'advisor'])
+            .maybeSingle()
+
+          setIsAdmin(!!roleData)
+        } else {
+          setIsAdmin(false)
+        }
+      }
+    )
+
+    return () => {
+      authListener?.subscription.unsubscribe()
+    }
+  }, [])
 
   return (
     <nav className="sticky top-0 z-50 w-full backdrop-blur-xl bg-[#090714]/85 border-b border-purple-900/20">
@@ -56,20 +127,48 @@ export function Navbar() {
           </div>
 
           {/* Action Buttons */}
-          <div className="hidden md:flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-slate-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/5 transition-all"
-            >
-              Iniciar Sesión
-            </Link>
-            <Link
-              href="/catalog"
-              className="rsd-glow-button text-sm font-semibold text-white px-5 py-2.5 rounded-xl flex items-center gap-2"
-            >
-              <span>Crear Invitación</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+          <div className="hidden md:flex items-center gap-3">
+            {!isLoading && (
+              <>
+                {user ? (
+                  <>
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="px-3.5 py-2 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-200 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-600/30 transition-all shadow-sm"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Consola Admin</span>
+                      </Link>
+                    )}
+                    <Link
+                      href="/dashboard"
+                      className="px-3.5 py-2 rounded-xl bg-white/5 border border-purple-900/30 text-slate-200 text-xs font-semibold flex items-center gap-1.5 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                      <LayoutDashboard className="w-3.5 h-3.5 text-pink-400" />
+                      <span>Mi Panel</span>
+                    </Link>
+                    <SignOutButton />
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      className="text-sm font-medium text-slate-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/5 transition-all"
+                    >
+                      Iniciar Sesión
+                    </Link>
+                    <Link
+                      href="/catalog"
+                      className="rsd-glow-button text-sm font-semibold text-white px-5 py-2.5 rounded-xl flex items-center gap-2"
+                    >
+                      <span>Crear Invitación</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
 
           {/* Mobile Hamburger Toggle */}
@@ -116,22 +215,58 @@ export function Navbar() {
           >
             Contacto
           </Link>
+
           <div className="pt-4 border-t border-purple-900/20 flex flex-col gap-2">
-            <Link
-              href="/login"
-              onClick={() => setIsOpen(false)}
-              className="w-full text-center py-2.5 rounded-lg text-slate-300 hover:bg-white/5 font-medium"
-            >
-              Iniciar Sesión
-            </Link>
-            <Link
-              href="/catalog"
-              onClick={() => setIsOpen(false)}
-              className="w-full rsd-glow-button text-center py-2.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2"
-            >
-              <span>Crear Invitación</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            {!isLoading && (
+              <>
+                {user ? (
+                  <>
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setIsOpen(false)}
+                        className="w-full text-center py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-200 font-bold text-xs flex items-center justify-center gap-2"
+                      >
+                        <Shield className="w-4 h-4 text-purple-400" />
+                        <span>Ir a Consola Admin</span>
+                      </Link>
+                    )}
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full text-center py-2.5 rounded-xl bg-white/5 border border-purple-900/30 text-slate-200 font-semibold text-xs flex items-center justify-center gap-2"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-pink-400" />
+                      <span>Ir a Mi Panel</span>
+                    </Link>
+                    <div className="pt-1">
+                      <SignOutButton
+                        variant="sidebar"
+                        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-semibold"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full text-center py-2.5 rounded-lg text-slate-300 hover:bg-white/5 font-medium text-sm"
+                    >
+                      Iniciar Sesión
+                    </Link>
+                    <Link
+                      href="/catalog"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full rsd-glow-button text-center py-2.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 text-sm"
+                    >
+                      <span>Crear Invitación</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}

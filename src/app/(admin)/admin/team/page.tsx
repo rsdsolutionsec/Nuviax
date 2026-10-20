@@ -15,7 +15,7 @@ export default async function AdminTeamPage() {
     .select(`
       id,
       role,
-      created_at,
+      granted_at,
       profiles:user_id (
         id,
         email,
@@ -24,7 +24,7 @@ export default async function AdminTeamPage() {
       )
     `)
     .in('role', ['admin', 'advisor', 'support'])
-    .order('created_at', { ascending: false })
+    .order('granted_at', { ascending: false })
 
   const teamList = teamMembers || []
 
@@ -142,11 +142,11 @@ export default async function AdminTeamPage() {
                       </td>
 
                       <td className="py-3.5 px-4 text-slate-400">
-                        {new Date(member.created_at).toLocaleDateString('es-ES', {
+                        {member.granted_at ? new Date(member.granted_at).toLocaleDateString('es-ES', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
-                        })}
+                        }) : 'N/A'}
                       </td>
 
                       <td className="py-3.5 px-4 text-right">

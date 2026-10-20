@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { normalizeSlug, isReservedSlug } from '@/lib/slug'
+import { normalizeTemplateCode } from '@/templates/registry'
 import {
   Sparkles,
   ArrowRight,
@@ -14,18 +15,48 @@ import {
   Loader2,
 } from 'lucide-react'
 
+interface TemplateOption {
+  id: string
+  code: string
+  name: string
+  category?: { name: string }
+}
+
 function NewEventForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const initialTemplate = searchParams.get('template') || 'boda-elegance-gold'
+  const initialParam = searchParams.get('template') || 'boda-elegance-gold'
+  const initialTemplate = normalizeTemplateCode(initialParam)
 
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [templateCode, setTemplateCode] = useState(initialTemplate)
+  const [dbTemplates, setDbTemplates] = useState<TemplateOption[]>([])
   const [eventDate, setEventDate] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
+
+  // Fetch active templates from DB
+  useEffect(() => {
+    async function loadDbTemplates() {
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('templates')
+          .select('id, code, name, category:categories(name)')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+
+        if (data && data.length > 0) {
+          setDbTemplates(data as unknown as TemplateOption[])
+        }
+      } catch {
+        // Keep fallback list
+      }
+    }
+    loadDbTemplates()
+  }, [])
 
   // Auto-generate slug from title
   const handleTitleChange = (val: string) => {
@@ -86,22 +117,71 @@ function NewEventForm() {
         return
       }
 
-      // 1. Get template
-      const { data: template } = await supabase
+      // 1. Resolve template by normalized code
+      const targetCode = normalizeTemplateCode(templateCode)
+      let { data: template } = await supabase
         .from('templates')
         .select('id, default_config')
-        .or(`code.eq.${templateCode.toUpperCase()},slug.eq.${templateCode}`)
+        .eq('code', targetCode)
         .maybeSingle()
 
-      // 2. Get default plan
-      const { data: defaultPlan } = await supabase
+      // If not found, try by ID if it's a UUID
+      if (!template) {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateCode)
+        if (isUuid) {
+          const { data: byId } = await supabase
+            .from('templates')
+            .select('id, default_config')
+            .eq('id', templateCode)
+            .maybeSingle()
+          template = byId
+        }
+      }
+
+      // Fallback: pick the first active template in database!
+      if (!template) {
+        const { data: firstTemplate } = await supabase
+          .from('templates')
+          .select('id, default_config')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        template = firstTemplate
+      }
+
+      if (!template) {
+        setErrorMessage('No hay plantillas activas disponibles en el sistema. Contacta al soporte de Nuviax.')
+        setIsSubmitting(false)
+        return
+      }
+
+      // 2. Resolve default plan
+      let { data: defaultPlan } = await supabase
         .from('plans')
         .select('id')
         .eq('code', 'interactive')
         .maybeSingle()
 
-      const templateId = template?.id || '00000000-0000-0000-0000-000000000001'
-      const planId = defaultPlan?.id || '00000000-0000-0000-0000-000000000001'
+      if (!defaultPlan) {
+        const { data: firstPlan } = await supabase
+          .from('plans')
+          .select('id')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        defaultPlan = firstPlan
+      }
+
+      if (!defaultPlan) {
+        setErrorMessage('No hay planes activos configurados en el sistema.')
+        setIsSubmitting(false)
+        return
+      }
+
+      const templateId = template.id
+      const planId = defaultPlan.id
 
       const defaultContent = {
         title,
@@ -240,40 +320,52 @@ function NewEventForm() {
             onChange={(e) => setTemplateCode(e.target.value)}
             className="w-full px-4 py-3.5 rounded-xl bg-[#090714] border border-purple-900/30 text-white text-sm focus:outline-none focus:border-purple-500"
           >
-            <optgroup label="Bodas & Compromisos (Programador A)">
-              <option value="BOD-001">BOD-001 · Boda Imperial Gold (Gala & Oro)</option>
-              <option value="BOD-002">BOD-002 · Boda Jardín Botánico (Campestre Chic)</option>
-              <option value="BOD-003">BOD-003 · Boda Minimalista Noir (Editorial)</option>
-              <option value="BOD-004">BOD-004 · Boda Bohemia Terracota (Boho Sunset)</option>
-            </optgroup>
-            <optgroup label="Aniversarios & Parejas (Programador A)">
-              <option value="PAR-001">PAR-001 · Aniversario Bodas de Plata & Oro</option>
-              <option value="PAR-002">PAR-002 · Compromiso & Velada Romántica</option>
-            </optgroup>
-            <optgroup label="Cumpleaños Adultos (Programador B)">
-              <option value="CUM-001">CUM-001 · Cumpleaños Midnight Glam (Cóctel VIP)</option>
-              <option value="CUM-002">CUM-002 · Neon Party Retro Wave (Cyberpunk)</option>
-              <option value="CUM-003">CUM-003 · Tropical Sunset Celebration (Pool Party)</option>
-            </optgroup>
-            <optgroup label="Quinceañeras (Programador B)">
-              <option value="QUI-001">QUI-001 · Quinceañera Princesa Rosé (Cuento de Hadas)</option>
-              <option value="QUI-002">QUI-002 · Quinceañera Midnight Star (Noche Estrellada)</option>
-            </optgroup>
-            <optgroup label="Cumpleaños Infantiles (Programador B)">
-              <option value="KIS-001">KIS-001 · Aventura Galáctica Kids (Cohetes & Planetas)</option>
-            </optgroup>
-            <optgroup label="Baby Showers (Programador C)">
-              <option value="BAB-001">BAB-001 · Baby Shower Dulce Nube (Acuarela Pastel)</option>
-              <option value="BAB-002">BAB-002 · Baby Shower Safari Acuarela (Safari Baby)</option>
-            </optgroup>
-            <optgroup label="Bautizos & Comunión (Programador C)">
-              <option value="BAU-001">BAU-001 · Bautizo Ángeles & Olivo (Espiritual)</option>
-              <option value="BAU-002">BAU-002 · Bautizo Celeste Luz (Blanco Marfil)</option>
-            </optgroup>
-            <optgroup label="Graduaciones (Programador C)">
-              <option value="GRA-001">GRA-001 · Graduación Magna Cum Laude (Gala & Birrete)</option>
-              <option value="GRA-002">GRA-002 · Graduación Vanguardia Moderna (Tecnológico)</option>
-            </optgroup>
+            {dbTemplates.length > 0 ? (
+              dbTemplates.map((t) => (
+                <option key={t.id} value={t.code}>
+                  {t.name} ({t.category?.name || 'General'})
+                </option>
+              ))
+            ) : (
+              <>
+                <optgroup label="Bodas & Compromisos (Programador A)">
+                  <option value="boda-elegance-gold">Elegance Gold · Gala Clásica & Oro</option>
+                  <option value="boda-botanica-minimal">Botánica Minimal · Orgánico & Campestre</option>
+                  <option value="boda-dark-romance">Midnight Velvet · Gala Nocturna</option>
+                  <option value="boda-boho-sunset">Boho Chic Sunset · Terracota & Bohemio</option>
+                </optgroup>
+                <optgroup label="Aniversarios & Parejas (Programador A)">
+                  <option value="aniv-silver-jubilee">Bodas de Plata & Oro · 25 y 50 Años</option>
+                  <option value="compromiso-champagne">Champagne Engagement · Velada Romántica</option>
+                </optgroup>
+                <optgroup label="Cumpleaños Adultos (Programador B)">
+                  <option value="cumple-vintage-jazz">Vintage Gatsby Night · Jazz & Años 20</option>
+                  <option value="cumple-neon-fest">Neon Fest & Cocktails · Fiesta Cyberpunk</option>
+                </optgroup>
+                <optgroup label="Quinceañeras (Programador B)">
+                  <option value="quince-princesa-rosea">Rose Princess XV · Cuento de Hadas</option>
+                  <option value="quince-glam-sparkle">Glam Sparkle XV · Neón & Partículas</option>
+                </optgroup>
+                <optgroup label="Cumpleaños Infantiles (Programador B)">
+                  <option value="cumple-kids-aventura">Aventura Cósmica · Cohetes & Planetas</option>
+                  <option value="cumple-kids-safari">Safari Selvático · Acuarela Animales</option>
+                </optgroup>
+                <optgroup label="Baby Showers (Programador C)">
+                  <option value="baby-shower-pastel">Pastel Cloud & Bears · Dulce Nube</option>
+                  <option value="baby-revelacion-luz">Glow Gender Reveal · Predicción Niño/Niña</option>
+                </optgroup>
+                <optgroup label="Bautizos & Comunión (Programador C)">
+                  <option value="bautizo-luz-celestial">Luz Celestial & Olivo · Espiritual Blanco</option>
+                </optgroup>
+                <optgroup label="Graduaciones (Programador C)">
+                  <option value="graduacion-laurel-oro">Honor & Laurel · Magna Cum Laude</option>
+                  <option value="graduacion-modern-tech">Modern Vanguard Grad · Tecnológico & Fiesta</option>
+                </optgroup>
+                <optgroup label="Corporativo & Galas (Programador C)">
+                  <option value="gala-corporativa-lux">Executive Gala & Launch · RSD High-Tech</option>
+                </optgroup>
+              </>
+            )}
           </select>
         </div>
 
