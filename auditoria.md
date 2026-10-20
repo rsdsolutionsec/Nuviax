@@ -1,8 +1,8 @@
 # AUDITORÍA TÉCNICA INTEGRAL DEL SISTEMA — NUVIAX (RSD SOLUTIONS)
 
 **Plataforma SaaS de Invitaciones Digitales Personalizadas**  
-**Fecha de Auditoría:** 19 de Octubre de 2026  
-**Versión del Sistema:** v1.2.0 (Producción / Verificado)  
+**Fecha de Auditoría:** 20 de Octubre de 2026  
+**Versión del Sistema:** v1.3.0 (Producción / Verificado)  
 **Repositorio Remoto Oficial:** `https://github.com/rsdsolutionsec/Nuviax`  
 **Estado General:** **APROBADO PARA PRODUCCIÓN (Verificado)**
 
@@ -13,7 +13,7 @@
 Se ha completado la auditoría técnica exhaustiva de arquitectura, base de datos en Supabase Cloud, seguridad multitenant, consola administrativa modular y biblioteca de plantillas para la plataforma SaaS **Nuviax**, desarrollada para **RSD SOLUTIONS**.
 
 El sistema ha superado con éxito las pruebas técnicas y criterios de producción:
-- **Base de Datos Cloud:** Proyecto Supabase `osprbbadeaizawbbomhh` completamente sincronizado con 6 migraciones SQL aplicadas mediante Supabase CLI.
+- **Base de Datos Cloud:** Proyecto Supabase `osprbbadeaizawbbomhh` completamente sincronizado con 7 migraciones SQL aplicadas mediante Supabase CLI.
 - **Seguridad Multitenant y RBAC:** Aislamiento estricto con Row Level Security (RLS) en todas las tablas, incluyendo políticas específicas para el rol `advisor` (solo lectura de clientes y eventos; bloqueo de listas de invitados y alergias).
 - **Compilación de Producción:** Next.js 16 compiló exitosamente **26 rutas** (estáticas y dinámicas) con cero errores TypeScript y cero fallas de renderizado.
 - **Flujo de Demostración Privada:** Enlaces criptográficos no deducibles (`/preview/[token]`), permisos de solo lectura, protección `noindex`, RPCs de regeneración/revocación y bloqueo de RSVP real.
@@ -196,6 +196,36 @@ Estado: Exitoso (Exit Code 0)
   - Identificación de motor de renderizado (`Código React Especializado` vs `Motor Declarativo Universal`).
   - Botón de alternancia en 1 clic para activar o desactivar la disponibilidad pública de cualquier plantilla mediante llamada API `PUT /api/admin/templates`.
   - Botón `+ Agregar Plantilla a este Tipo` que precarga la categoría en `/admin/templates/new?category_id=...`.
+
+### 6.8. Sistema Integral de Confirmación RSVP con Teléfono, Deduplicación y Anti-Spam
+- **Migración de Base de Datos (`public.guests`):**
+  - Aplicada columna `phone TEXT` e índice compuesto `idx_guests_event_phone ON public.guests (event_id, phone)` en Supabase Cloud (`osprbbadeaizawbbomhh`).
+- **Endpoint API Robusto (`/api/rsvp`):**
+  - Validación de esquema Zod estricta: `firstName`, `lastName`, `phone`, `companions`, `dietaryRestrictions`, `notes`.
+  - Trampa anti-bots (Honeypot): Campo oculto `botHoneypot` que detecta y descarta silenciosamente envíos automatizados sin contaminar la base de datos.
+  - Motor de deduplicación inteligente: Al recibir un envío, el servidor busca coincidencias previas por token de invitación, número de teléfono normalizado o nombre/apellido dentro del mismo evento. Si ya existe, actualiza el registro existente en lugar de crear filas duplicadas de spam.
+- **Modal de Confirmación Público Rediseñado (`PublicRsvpModal.tsx`):**
+  - Campos separados y obligatorios para **Nombre**, **Apellido** y **Número de Teléfono / WhatsApp**.
+  - Persistencia en navegador local (`localStorage` con clave `nuviax_rsvp_${eventSlug}`): si el invitado ya confirmó en ese dispositivo, el modal detecta su asistencia, pre-carga sus datos y le permite consultar o modificar su confirmación con un clic.
+- **Gestión de Invitados en Panel del Cliente (`/dashboard/events/[id]/guests`):**
+  - Visualización tabular completa con columna de **Teléfono / WhatsApp**.
+  - Enlace directo interactivo a WhatsApp (`https://wa.me/...`) para que el anfitrión pueda contactar al invitado con un solo clic.
+  - Exportación de lista en CSV con columna de teléfono incluida para descarga y control en hojas de cálculo.
+
+### 6.9. Editor Integral de Invitaciones en 8 Módulos con Gestión de Suscripciones y Upgrade
+- **Reconstrucción Modular del Editor (`/dashboard/events/[id]/edit`):**
+  - **Módulo 1: Contenido & Textos:** Título, subtítulo, anfitriones, frase/cita conmemorativa, código de vestimenta, mesa de regalos y cuentas bancarias.
+  - **Módulo 2: Colores & Tipografía:** Paleta completa de colores (primario, secundario, fondo, acento) y combinaciones tipográficas editoriales (Cinzel, Playfair Display, Outfit, Syne, Montserrat, Cormorant Garamond).
+  - **Módulo 3: Animaciones & Hover (⭐ Premium):** Orbes de resplandor ambiental flotantes, destellos mágicos de fiesta, pulso neón y elevación 3D en tarjetas al pasar el cursor.
+  - **Módulo 4: Ubicaciones & Itinerario:** Coordenadas GPS y links a Google Maps para ceremonia y recepción, junto con un constructor cronológico de itinerario (agregar, editar y eliminar momentos con hora, título y notas).
+  - **Módulo 5: Música & Fotos (⭐ Premium):** URL de audio MP3 ambiental con reproductor de disco de vinilo interactivo, interruptor de cuenta regresiva en vivo, selección de portadas y galería de fotos ampliada.
+  - **Módulo 6: RSVP & Seguridad:** Activación/desactivación de confirmaciones, límite de acompañantes, registro de alergias/restricciones alimentarias y política de deduplicación.
+  - **Módulo 7: Mi Plan & Vigencia:** Consulta en tiempo real del plan contratado (Esencial, Interactiva, Evento Pro), estado de publicación, fecha exacta de vigencia, comparador de funcionalidades activas y botón de upgrade directo a `/dashboard/events/[id]/checkout`.
+  - **Módulo 8: Demo Privada:** Gestión de enlaces criptográficos no deducibles con regeneración y revocación segura.
+- **Lógica de Entitlements y Selector Amigable con Distintivo Premium:**
+  - Los clientes en plan Esencial pueden explorar y configurar libremente las opciones avanzadas en el editor para previsualizarlas en vivo en el simulador móvil interactivo.
+  - Cada opción reservada para planes superiores cuenta con un badge visual distintivo `⭐ Opción Premium`.
+  - Un banner flotante inteligente detecta si el anfitrión configuró opciones premium y le informa de manera no intrusiva con un botón directo para mejorar su suscripción a Interactiva o Evento Pro.
 
 ---
 

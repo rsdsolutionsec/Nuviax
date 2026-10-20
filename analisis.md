@@ -2,8 +2,8 @@
 
 **Plataforma SaaS de Invitaciones Digitales Personalizadas**  
 **Desarrollado para:** RSD SOLUTIONS  
-**Fecha de Actualización:** 19 de Octubre de 2026  
-**Versión:** v1.2.0 (Producción / Verificado)  
+**Fecha de Actualización:** 20 de Octubre de 2026  
+**Versión:** v1.3.0 (Producción / Verificado)  
 
 ---
 
@@ -290,6 +290,45 @@ Para garantizar compatibilidad retroactiva total entre los códigos de catálogo
   - Consulta en Supabase únicamente las plantillas activas (`is_active = true` y `status = 'published'`).
   - Muestra actualmente las plantillas completamente operativas (`boda-elegance-gold` y `cumple-midnight-glam`).
   - A medida que el equipo directivo y asesores den de alta o activen nuevas plantillas, estas aparecen automáticamente en el catálogo y en el selector de creación de eventos (`/dashboard/events/new`).
+
+### 10.5. Flujo de Confirmación RSVP con Teléfono, Deduplicación y Gestión de Asistencia
+- **Captura Completa de Contacto:** En todas las plantillas (tanto en las codificadas como en las del motor declarativo), el botón de confirmar asistencia abre el modal interactivo `PublicRsvpModal` que solicita de forma obligatoria:
+  - Nombre
+  - Apellido
+  - Teléfono / WhatsApp (con prefijo y formato numérico)
+  - Número de acompañantes adicionales
+  - Restricciones dietéticas o alergias (opcional)
+  - Mensaje de felicitaciones / notas (opcional)
+- **Seguridad Anti-Spam y Trampa Honeypot:**
+  - El modal incluye un campo trampa invisible para humanos (`botHoneypot`). Si bots o scripts automatizados lo completan, la API descarta la solicitud con éxito aparente sin impactar la base de datos.
+- **Motor de Deduplicación y Persistencia:**
+  - En el navegador del invitado: Se almacena en `localStorage` la clave `nuviax_rsvp_${eventSlug}`. Si el invitado ingresa nuevamente al enlace, el sistema detecta su asistencia confirmada y le ofrece la opción de *"Ver / Modificar Asistencia"*, cargando sus datos previos.
+  - En el servidor (`/api/rsvp`): Si el invitado abre la invitación desde otro dispositivo o modo incógnito y vuelve a enviar su confirmación con el mismo número de teléfono, token o coincidencia de nombre/apellido en el mismo evento, el backend no duplica la fila; en su lugar, actualiza el registro existente (`updated: true`), manteniendo la cuenta de asistentes limpia y certera para el anfitrión.
+- **Visualización en Panel del Cliente (`/dashboard/events/[id]/guests`):**
+  - El anfitrión visualiza la lista consolidada de confirmaciones con badges de estado (Confirmado / Rechazado / Pendiente).
+  - Columna destacada de **Teléfono / WhatsApp** con enlace de un solo clic a `https://wa.me/...` para entablar comunicación directa o enviar recordatorios.
+  - Función de exportación de lista completa en CSV compatible con Excel y Google Sheets.
+
+### 10.6. Editor Integral de Invitaciones en 8 Módulos y Lógica de Suscripciones
+El anfitrión dispone de una consola de personalización profunda en `/dashboard/events/[id]/edit` estructurada en 8 pestañas temáticas:
+1. **Contenido & Textos:** Edición reactiva del título, subtítulo, anfitriones, frase/versículo, dress code, mesa de regalos y cuentas bancarias para transferencias.
+2. **Colores & Tipografía:** Personalización de color primario, secundario, fondo y acentos mediante selectores nativos y presets de alta gama. Selección de fuentes tipográficas emparejadas para encabezados y cuerpo.
+3. **Animaciones & Hover (⭐ Premium):** Control de efectos dinámicos como orbes ambientales flotantes (`float-slow`), destellos mágicos de partículas, efecto neón pulsante y elevación 3D de tarjetas con iluminación al pasar el cursor.
+4. **Ubicaciones & Itinerario:** Direcciones y enlaces directos a Google Maps para ceremonia y recepción. Constructor cronológico de itinerario donde el anfitrión puede agregar, reordenar y eliminar momentos con hora, título y descripción.
+5. **Música & Fotos (⭐ Premium):** Asignación de audio MP3 ambiental con reproductor flotante estilo disco de vinilo, interruptor de cuenta regresiva y galería de fotografías.
+6. **RSVP & Seguridad:** Activación o cierre del formulario de asistencia, límite máximo de acompañantes por invitación y políticas de deduplicación.
+7. **Mi Plan & Vigencia:** Panel de control de la suscripción del evento:
+   - Visualización del plan activo (Esencial, Interactiva, Evento Pro) y precio.
+   - Fecha de vencimiento exacta y estado de publicación en línea.
+   - Lista comparativa de funcionalidades incluidas versus bloqueadas.
+   - Botón directo de actualización de plan (Upgrade) que redirige a la pasarela de compra `/dashboard/events/[id]/checkout`.
+8. **Demo Privada:** Generación, regeneración y revocación de enlaces de previsualización no indexables (`/preview/[token]`).
+
+**Lógica de Entitlements y Selector Amigable:**
+- En el plan Esencial, el cliente no tiene las opciones bloqueadas de forma rígida; puede configurarlas, probar las animaciones, la música y los estilos en la previsualización móvil en tiempo real.
+- Las opciones exclusivas de planes superiores se identifican con un distintivo `⭐ Opción Premium`.
+- Un banner flotante inteligente avisa al anfitrión que tiene opciones premium activas y le ofrece la opción de dar de alta su evento con el plan Interactiva o Evento Pro para que dichas funciones se reflejen para todos sus invitados.
+
 
 
 

@@ -26,6 +26,7 @@ interface GuestItem {
   id: string
   first_name: string
   last_name: string
+  phone: string | null
   group_name: string | null
   invitation_token: string
   authorized_companions: number
@@ -65,6 +66,7 @@ export default function GuestManagementPage({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
   const [authorizedCompanions, setAuthorizedCompanions] = useState(0)
   const [groupName, setGroupName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -122,6 +124,7 @@ export default function GuestManagementPage({
           event_id: eventId,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
+          phone: phone.trim() || null,
           authorized_companions: authorizedCompanions,
           group_name: groupName.trim() || null,
           invitation_token: randomToken,
@@ -139,6 +142,7 @@ export default function GuestManagementPage({
       setIsModalOpen(false)
       setFirstName('')
       setLastName('')
+      setPhone('')
       setAuthorizedCompanions(0)
       setGroupName('')
     } catch {
@@ -155,7 +159,7 @@ export default function GuestManagementPage({
       const supabase = createClient()
       await supabase.from('guests').delete().eq('id', id)
       setGuests(guests.filter((g) => g.id !== id))
-    } catch (err) {
+    } catch {
       alert('No se pudo eliminar el invitado.')
     }
   }
@@ -174,6 +178,7 @@ export default function GuestManagementPage({
     const headers = [
       'Nombre',
       'Apellido',
+      'Teléfono / WhatsApp',
       'Grupo',
       'Pases Autorizados',
       'Estado RSVP',
@@ -186,6 +191,7 @@ export default function GuestManagementPage({
     const rows = guests.map((g) => [
       `"${g.first_name}"`,
       `"${g.last_name || ''}"`,
+      `"${g.phone || ''}"`,
       `"${g.group_name || ''}"`,
       g.authorized_companions,
       g.rsvp_status,
@@ -389,6 +395,7 @@ export default function GuestManagementPage({
                 <thead className="bg-[#0C081D] text-slate-400 uppercase tracking-wider text-[10px] border-b border-purple-900/20">
                   <tr>
                     <th className="py-3.5 px-4">Invitado</th>
+                    <th className="py-3.5 px-4">Teléfono / WhatsApp</th>
                     <th className="py-3.5 px-4">Grupo Familiar</th>
                     <th className="py-3.5 px-4 text-center">Pases</th>
                     <th className="py-3.5 px-4 text-center">Estado RSVP</th>
@@ -406,6 +413,22 @@ export default function GuestManagementPage({
                         <span className="text-[10px] text-slate-500 font-mono">
                           Token: {guest.invitation_token.substring(0, 8)}...
                         </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-slate-300">
+                        {guest.phone ? (
+                          <a
+                            href={`https://wa.me/${guest.phone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 font-mono text-[11px] transition-colors"
+                            title="Enviar WhatsApp"
+                          >
+                            <span>📱 {guest.phone}</span>
+                          </a>
+                        ) : (
+                          <span className="text-slate-500 text-[11px]">No registrado</span>
+                        )}
                       </td>
 
                       <td className="py-3.5 px-4 text-slate-300">
@@ -537,6 +560,19 @@ export default function GuestManagementPage({
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Ej: Andrade"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#090714] border border-purple-900/30 text-white text-sm focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block uppercase font-bold text-slate-300 mb-1">
+                  Teléfono / WhatsApp (Opcional)
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Ej: +593 99 123 4567"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#090714] border border-purple-900/30 text-white text-sm focus:outline-none focus:border-purple-500"
                 />
               </div>
